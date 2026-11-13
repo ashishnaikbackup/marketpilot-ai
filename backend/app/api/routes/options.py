@@ -3,6 +3,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
+from app.domain.greeks import black_scholes_greeks
 from app.domain.options import OptionPosition, OptionSide, position_expiry_pnl
 
 router = APIRouter(prefix="/options", tags=["options"])
@@ -15,12 +16,28 @@ class PositionInput(BaseModel):
     premium: float = Field(ge=0)
     lot_size: int = Field(default=1, gt=0)
 
+    @field_validator("quantity")
+    @classmethod
+    def quantity_must_be_nonzero(cls, value: int) -> int:
+        if value == 0:
+            raise ValueError("quantity cannot be zero")
+        return value
+
 
 class PayoffRequest(BaseModel):
     positions: list[PositionInput] = Field(min_length=1, max_length=20)
     spot_min: float = Field(ge=0)
     spot_max: float = Field(gt=0)
     steps: int = Field(default=21, ge=2, le=201)
+
+
+class GreeksRequest(BaseModel):
+    side: Literal["call", "put"]
+    spot: float = Field(gt=0)
+    strike: float = Field(gt=0)
+    years_to_expiry: float = Field(gt=0, le=10)
+    risk_free_rate: float = Field(ge=-0.05, le=0.30)
+    volatility: float = Field(gt=0, le=5, description="Annualised volatility as a decimal")
 
 
 @router.post("/expiry-payoff", summary="Calculate a multi-leg option payoff at expiry")
@@ -53,4 +70,30 @@ def expiry_payoff(payload: PayoffRequest) -> dict:
         "includes_slippage": False,
         "points": points,
         "disclaimer": "Gross payoff at expiry only; not live option value, margin or a trade recommendation.",
+    }
+
+
+@router.post("/greeks", summary="Calculate theoretical European option Greeks")
+def option_greeks(payload: GreeksRequest) -> dict:
+    result = black_scholes_greeks(
+        side=OptionSide(payload.side),
+        spot=payload.spot,
+        strike=payload.strike,
+        years_to_expiry=payload.years_to_expiry,
+        risk_free_rate=payload.risk_free_rate,
+        volatility=payload.volatility,
+    )
+    return {
+        "model": "black_scholes_european",
+        "inputs": payload.model_dump(),
+        "theoretical_price": round(result.theoretical_price, 6),
+        "delta": round(result.delta, 6),
+        "gamma": round(result.gamma, 8),
+        "theta_per_year": round(result.theta_per_year, 6),
+        "vega_per_1pct": round(result.vega_per_1pct, 6),
+        "data_mode": "modelled_assumptions",
+        "disclaimer": (
+            "Model output from user-supplied assumptions, not a market quote or signal. "
+            "European Black-Scholes omits dividends, early exercise, jumps and trading costs."
+        ),
     }
