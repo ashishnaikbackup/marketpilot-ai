@@ -63,23 +63,25 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Model comparison and token/cost observability
 
 ### Milestone 6 — Portfolio and paper trading
-- [x] Browser-local paper trade journal with manual entry/exit and closed P&L; [ ] virtual cash, positions and full order lifecycle
+- [x] Browser-local paper trade journal with manual entry/exit and closed P&L
+- [x] Cloudflare Worker paper-bot engine with virtual India/global books, rule-based entries, CE/PE and CALL/PUT filters, position sizing, stops, targets and exits; [ ] D1 provisioning/provider feed required to activate
 - [x] Browser-local trade journal with thesis, direction, stop and target fields
 - [x] FinPilot-style manual holdings ledger with INR-converted unrealised P&L and user-entered FX; [ ] persistent account-backed holdings and realised/unrealised performance
 - [x] Money Manager with manual income/expense ledger, monthly budgets, savings goals, local cash-flow/health indicators and CSV import/export; [ ] bank/UPI integration and per-user encrypted sync
 - [x] Position-sizing, stop-loss/target, risk-budget and reward/risk calculator; [ ] execution-aware portfolio-level risk aggregation
-- [ ] P&L, drawdown, exposure and risk limits
+- [x] Starter virtual cash, open positions, entry/exit journal and realised P&L reporting; [ ] full fee/tax/slippage/corporate-action accounting and portfolio-level drawdown stress tests
 - [ ] Replay and paper-trade evaluation
 - [ ] No broker order routing in this milestone
 
 ### Milestone 7 — Automated research reports
 - [x] In-app budget-overrun indicators and savings-goal progress (browser-local); [ ] scheduled/push alerts with quiet hours and audit history
 - [ ] Pre-market report
+- [x] Scheduled paper scans: India every 5 minutes in session; global every 15 minutes (provider and D1 activation pending)
+- [x] EOD run/report persistence endpoints for India and global (delivery/notifications pending)
 - [ ] Intraday event/threshold alerts
-- [ ] Closing report
 - [ ] Weekly review
 - [ ] Monthly review
-- [ ] Scheduler, retries, audit logs and notification preferences
+- [x] Cloudflare Cron scheduler and D1 run log schema; [ ] production retry monitoring and notification preferences
 
 ### Milestone 8 — Global research
 - [x] Global asset-class workspace and browser-local watchlist shell; [ ] live US and major global indices
@@ -88,17 +90,18 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [x] CSV historical asset analyzer with CAGR, volatility, max drawdown, RSI and SMA20/50; [ ] validated adjusted-price history, dividends and benchmark-aware analytics
 - [x] Self-paced Academy with quizzes and local progress; [ ] structured curriculum assessments and synced learner profiles
 - [x] India and selected US/Asia market-session references plus risk checklist; [ ] timezone-aware live calendar and provider-backed intraday timing analysis
-- [ ] Global equities and ETFs
+- [ ] Live provider-backed global equities and ETFs (adapter contract documented; provider selection pending)
 - [ ] FX, commodities, bonds and macro indicators
 - [ ] Mutual funds/SIPs and long-term asset research
 - [ ] Regional market calendars and currency conversion
 
 ### Milestone 9 — Production readiness
 - [ ] Authentication, authorization and account isolation
-- [ ] Secrets management, rate limiting and audit trails
+- [x] Paper-bot read/run token gates and server-side provider-secret boundary; [ ] Cloudflare Access, secret provisioning, rate limits and full audit trails
 - [x] Docker backend image and Render Blueprint deployment definition (service provisioning remains external)
 - [ ] Monitoring, backups, disaster recovery and security review
 - [ ] Data-provider licensing and legal review
+- [ ] D1 database and normalized market-data adapter deployed; user must select/authorize providers
 - [x] Vite GitHub Pages build/deploy workflow and project-base configuration
 - [ ] GitHub Pages repository source switched to GitHub Actions and React dashboard verified live
 - [ ] Cloudflare Worker deployed to the user's account and API health verified
