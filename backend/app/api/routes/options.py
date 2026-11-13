@@ -1,7 +1,7 @@
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.domain.options import OptionPosition, OptionSide, position_expiry_pnl
 
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/options", tags=["options"])
 
 class PositionInput(BaseModel):
     side: Literal["call", "put"]
-    quantity: int = Field(ne=0, description="Positive for long, negative for short; units before lot size")
+    quantity: int = Field(description="Positive for long, negative for short; units before lot size")
     strike: float = Field(gt=0)
     premium: float = Field(ge=0)
     lot_size: int = Field(default=1, gt=0)
