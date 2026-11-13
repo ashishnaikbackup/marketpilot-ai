@@ -9,9 +9,11 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [x] FastAPI service and health endpoint
 - [x] Initial option payoff domain functions and tests
 - [x] React/TypeScript dashboard shell with demo-data disclosure
-- [ ] CI, formatting, linting and deployment pipeline
+- [x] CI workflow for backend lint/tests and frontend production build (verification in progress)
 
 ### Milestone 1 — Data foundation
+- [x] Explicit unavailable-provider status endpoint
+- [x] Conservative freshness/provenance/required-field gate with NO_TRADE fallback
 - [ ] Provider interface for quotes, candles, instruments, expiries and option chains
 - [ ] Data provenance, exchange timezone, timestamp and freshness metadata
 - [ ] Market calendar and instrument master with expiry/lot-size versioning
@@ -38,7 +40,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Rules-based, testable market feature calculations
 - [ ] Bull/base/bear scenarios and thesis invalidation
 - [ ] Candidate ranking with explainable evidence, never a guaranteed signal
-- [ ] NO TRADE state and minimum data-quality gates
+- [x] NO TRADE state and minimum data-quality gates (starter readiness gate only)
 - [ ] Backtesting with costs, slippage, survivorship and look-ahead controls
 
 ### Milestone 5 — AI analyst
