@@ -10,7 +10,7 @@ router = APIRouter(prefix="/options", tags=["options"])
 
 class PositionInput(BaseModel):
     side: Literal["call", "put"]
-    quantity: int = Field(description="Positive for long, negative for short; units before lot size")
+    quantity: int = Field(ne=0, description="Positive for long, negative for short; units before lot size")
     strike: float = Field(gt=0)
     premium: float = Field(ge=0)
     lot_size: int = Field(default=1, gt=0)
