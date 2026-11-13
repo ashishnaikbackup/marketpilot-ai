@@ -21,3 +21,18 @@ def test_put_call_delta_parity_for_same_inputs() -> None:
 def test_invalid_model_inputs_are_rejected() -> None:
     with pytest.raises(ValueError):
         black_scholes_greeks(OptionSide.CALL, 100, 100, 0, 0.05, 0.2)
+
+
+def test_implied_volatility_solver_recovers_known_volatility() -> None:
+    from app.domain.greeks import implied_volatility
+
+    theoretical = black_scholes_greeks(OptionSide.CALL, 100, 100, 1, 0.05, 0.25)
+    solved = implied_volatility(OptionSide.CALL, 100, 100, 1, 0.05, theoretical.theoretical_price)
+    assert solved == pytest.approx(0.25, abs=1e-5)
+
+
+def test_implied_volatility_rejects_unreasonable_price() -> None:
+    from app.domain.greeks import implied_volatility
+
+    with pytest.raises(ValueError):
+        implied_volatility(OptionSide.CALL, 100, 100, 1, 0.05, 500)
