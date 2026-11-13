@@ -2,7 +2,9 @@
 
 **AI-powered market research and F&O intelligence — India first, global by design.**
 
-**Live dashboard:** https://ashishnaikbackup.github.io/marketpilot-ai/ (static frontend; market data and backend services are not connected).\n\nMarketPilot AI is a research-first financial intelligence platform. Its first product focus is Indian index derivatives: **NIFTY 50, BANKNIFTY and FINNIFTY**, with options-chain analytics, volatility context, scenario analysis, risk calculations, paper trading and scheduled research reports.
+**Live dashboard:** https://ashishnaikbackup.github.io/marketpilot-ai/ (static frontend; market data and backend services are not connected).
+
+MarketPilot AI is a research-first financial intelligence platform. Its first product focus is Indian index derivatives: **NIFTY 50, BANKNIFTY and FINNIFTY**, with options-chain analytics, volatility context, scenario analysis, risk calculations, paper trading and scheduled research reports.
 
 > **Current status:** Functional research-first MVP foundation. The dashboard includes India F&O tools, a guarded scanner, strategy payoff lab, browser-local paper journal, report builder, learning path and global watchlist. No live exchange feed, broker connection, AI-generated signal or real-money execution is enabled.
 
