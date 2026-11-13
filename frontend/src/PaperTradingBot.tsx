@@ -8,7 +8,7 @@ type Row = {
 };
 type Trade = {
   id:string; symbol:string; underlying:string; market:string; assetType:string; optionType:string;
-  side:string; quantity:number; entry:number; stop:number; target:number; mark:number; pnl:number;
+  side:string; quantity:number; entry:number; stop:number; target:number; mark:number; pnl:number; strike:number; expiry:string;
   status:"OPEN"|"CLOSED"; openedAt:string; closedAt?:string; exit?:number; exitReason?:string;
   sourceTime:string; thesis:string;
 };
@@ -80,9 +80,9 @@ export default function PaperTradingBot(){
     if(cash<=0){setStatus("Virtual capital must be greater than zero.");setBusy(false);return;}
     const next=[...trades];const notes:string[]=[];const skips:string[]=[];
     // Update open simulations only from the newest imported close for the same instrument/contract.
-    for(let i=0;i<next.length;i++){const t=next[i];if(t.status!=="OPEN")continue;const candidates=rows.filter(r=>t.assetType==="OPTION"?r.assetType==="OPTION"&&r.underlying===t.underlying&&r.optionType===t.optionType&&r.strike===Number(t.symbol.split(" ").slice(-1)[0])&&r.expiry===t.symbol.split(" ")[1]:r.symbol===t.symbol);const latest=candidates.sort((a,b)=>(isoTime(b.timestamp)?.getTime()||0)-(isoTime(a.timestamp)?.getTime()||0))[0];if(!latest)continue;const mark=latest.close;const move=(mark-t.entry)*t.quantity;const stopHit=mark<=t.stop,targetHit=mark>=t.target;next[i]={...t,mark,pnl:move,...(stopHit||targetHit?{status:"CLOSED",exit:stopHit?t.stop:t.target,closedAt:new Date().toISOString(),exitReason:stopHit?"Stop assumption reached":"Target assumption reached",pnl:((stopHit?t.stop:t.target)-t.entry)*t.quantity}:{})};if(stopHit||targetHit)notes.push(`Closed ${t.symbol}: ${stopHit?"stop":"target"} assumption reached.`);}
+    for(let i=0;i<next.length;i++){const t=next[i];if(t.status!=="OPEN")continue;const candidates=rows.filter(r=>t.assetType==="OPTION"?r.assetType==="OPTION"&&r.underlying===t.underlying&&r.optionType===t.optionType&&r.strike===t.strike&&r.expiry===t.expiry:r.symbol===t.symbol);const latest=candidates.sort((a,b)=>(isoTime(b.timestamp)?.getTime()||0)-(isoTime(a.timestamp)?.getTime()||0))[0];if(!latest)continue;const mark=latest.close;const move=(mark-t.entry)*t.quantity;const stopHit=mark<=t.stop,targetHit=mark>=t.target;next[i]={...t,mark,pnl:move,...(stopHit||targetHit?{status:"CLOSED",exit:stopHit?t.stop:t.target,closedAt:new Date().toISOString(),exitReason:stopHit?"Stop assumption reached":"Target assumption reached",pnl:((stopHit?t.stop:t.target)-t.entry)*t.quantity}:{})};if(stopHit||targetHit)notes.push(`Closed ${t.symbol}: ${stopHit?"stop":"target"} assumption reached.`);}
     const active=next.filter(t=>t.status==="OPEN").length;
-    const used=new Set(next.map(t=>t.status==="OPEN"?t.underlying+"|"+t.assetType:""));
+    const used=new Set(next.filter(t=>t.status==="OPEN").map(t=>t.underlying));
     for(const [symbol,bars] of grouped){
       if(watched.length&&!watched.some(w=>symbol.includes(w)||w.includes(symbol)))continue;
       if(bars.length<30){skips.push(`${symbol}: fewer than 30 bars`);continue;}
@@ -90,7 +90,7 @@ export default function PaperTradingBot(){
       const bull=fast!==null&&slow!==null&&fast>slow&&last.close>slow&&strength!==null&&strength>=52&&strength<=72&&volRatio>=1.0;
       const bear=fast!==null&&slow!==null&&fast<slow&&last.close<slow&&strength!==null&&strength<=48&&strength>=28&&volRatio>=1.0;
       if(!bull&&!bear){continue;}
-      if(used.has(symbol+"|EQUITY")||used.has(symbol+"|ETF")||used.has(symbol+"|FUTURE")){skips.push(`${symbol}: already has an open simulated position`);continue;}
+      if(used.has(symbol)){skips.push(`${symbol}: already has an open simulated position`);continue;}
       if(active>=limit){skips.push(`Position limit ${limit} reached`);break;}
       const dataDate=isoTime(last.timestamp);if(!dataDate||Date.now()-dataDate.getTime()>7*86400000){skips.push(`${symbol}: latest bar is older than 7 days`);continue;}
       const options=rows.filter(r=>r.assetType==="OPTION"&&r.underlying===symbol&&r.optionType===(bull?"CE":"PE")&&r.close>0&&r.bid>0&&r.ask>=r.bid&&r.lotSize>0&&(!r.expiry||new Date(r.expiry).getTime()>Date.now()));
@@ -102,13 +102,13 @@ export default function PaperTradingBot(){
         if(spread>0.05||chosen.openInterest<=0||chosen.volume<=0){skips.push(`${symbol}: nearest ${bull?"CE":"PE"} fails liquidity/spread checks`);continue;}
         const qty=chosen.lotSize,stop=mid*.65,target=mid*1.6,riskMoney=(mid-stop)*qty;
         if(riskMoney>cash*risk){skips.push(`${symbol}: one option lot exceeds the ${(risk*100).toFixed(2)}% virtual risk budget`);continue;}
-        trade={id:crypto.randomUUID(),symbol:`${symbol} ${chosen.expiry} ${chosen.optionType} ${chosen.strike}`,underlying:symbol,market:chosen.market,assetType:"OPTION",optionType:chosen.optionType,side:"BUY",quantity:qty,entry:mid,stop,target,mark:mid,pnl:0,status:"OPEN",openedAt:new Date().toISOString(),sourceTime:chosen.timestamp,thesis:`${bull?"Bullish":"Bearish"} underlying trend; 9/21 EMA alignment, RSI ${strength!.toFixed(1)}, volume ratio ${volRatio.toFixed(2)}x. Long option only; premium at mid assumed.`};
+        trade={id:crypto.randomUUID(),symbol:`${symbol} ${chosen.expiry} ${chosen.optionType} ${chosen.strike}`,underlying:symbol,market:chosen.market,assetType:"OPTION",optionType:chosen.optionType,strike:chosen.strike,expiry:chosen.expiry,side:"BUY",quantity:qty,entry:mid,stop,target,mark:mid,pnl:0,status:"OPEN",openedAt:new Date().toISOString(),sourceTime:chosen.timestamp,thesis:`${bull?"Bullish":"Bearish"} underlying trend; 9/21 EMA alignment, RSI ${strength!.toFixed(1)}, volume ratio ${volRatio.toFixed(2)}x. Long option only; premium at mid assumed.`};
       } else if(bull && (last.assetType==="EQUITY"||last.assetType==="ETF"||last.assetType==="STOCK"||last.assetType==="")) {
         const stop=last.close-2*(range||last.close*.02),target=last.close+3*(last.close-stop),qty=Math.floor(cash*risk/Math.max(.01,last.close-stop));
         if(qty<1){skips.push(`${symbol}: share quantity below one at current risk budget`);continue;}
-        trade={id:crypto.randomUUID(),symbol,underlying:symbol,market:last.market,assetType:last.assetType,optionType:"",side:"BUY",quantity:qty,entry:last.close,stop,target,mark:last.close,pnl:0,status:"OPEN",openedAt:new Date().toISOString(),sourceTime:last.timestamp,thesis:`Bullish trend; 9/21 EMA alignment, RSI ${strength!.toFixed(1)}, volume ratio ${volRatio.toFixed(2)}x. Simulated cash-equity entry at last close.`};
+        trade={id:crypto.randomUUID(),symbol,underlying:symbol,market:last.market,assetType:last.assetType,optionType:"",strike:0,expiry:"",side:"BUY",quantity:qty,entry:last.close,stop,target,mark:last.close,pnl:0,status:"OPEN",openedAt:new Date().toISOString(),sourceTime:last.timestamp,thesis:`Bullish trend; 9/21 EMA alignment, RSI ${strength!.toFixed(1)}, volume ratio ${volRatio.toFixed(2)}x. Simulated cash-equity entry at last close.`};
       } else {skips.push(`${symbol}: signal found but no eligible long-only cash/ETF or liquid matching CE/PE contract`);continue;}
-      next.unshift(trade);used.add(symbol+"|"+trade.assetType);notes.push(`PAPER BUY ${trade.symbol} · ${trade.quantity} units · assumed entry ${trade.entry.toFixed(2)}`);
+      next.unshift(trade);used.add(symbol);notes.push(`PAPER BUY ${trade.symbol} · ${trade.quantity} units · assumed entry ${trade.entry.toFixed(2)}`);
     }
     persistTrades(next);setSkipped(skips);setLastScan(new Date().toISOString());setStatus(`Scan complete. ${notes.length} trade events; ${skips.length} safeguards/no-entry reasons. No broker orders were sent.`);
     setReport(makeReport(next,notes,skips,latestDate));setBusy(false);
