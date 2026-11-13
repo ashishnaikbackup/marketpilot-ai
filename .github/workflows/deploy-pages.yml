@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "frontend/**"
+      - "docs/**"
+      - "README.md"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -32,7 +34,7 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: npm run build
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: frontend/dist
 
