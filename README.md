@@ -21,7 +21,8 @@ MarketPilot AI is an integrated financial intelligence platform combining Market
 ## Planned capabilities
 
 - India market overview: NIFTY, BANKNIFTY, FINNIFTY, India VIX, sectors and market breadth.
-- F&O workbench: option chain, OI/change in OI, volume, IV, Greeks, PCR, expiry and payoff analysis.\n- India Market Lab: import a user-supplied option-chain CSV, calculate PCR, change-OI PCR, max pain, OI concentrations, ATM IV and quoted spreads; the Copilot can explain the imported snapshot.
+- F&O workbench: option chain, OI/change in OI, volume, IV, Greeks, PCR, expiry and payoff analysis.
+- India Market Lab: import a user-supplied option-chain CSV, calculate PCR, change-OI PCR, max pain, OI concentrations, ATM IV and quoted spreads; the Copilot can explain the imported snapshot.
 - Research scanner: bullish/bearish/neutral scenarios, entry zone, targets, invalidation and risk/reward — or NO TRADE.
 - Strategy lab: payoff and breakeven for defined-risk option structures.
 - Paper portfolio and trade journal.
@@ -68,7 +69,8 @@ The static frontend can be built and hosted independently. The current Greeks ca
 
 - `GET /api/v1/instruments` returns the bootstrap universe; lot sizes and expiry calendars remain intentionally unset until a dated authorised instrument master is configured.
 - `POST /api/v1/analytics/option-chain` calculates descriptive PCR, OI, change-in-OI, volume and concentration from caller-supplied rows. It does not fetch or verify exchange data.
-- `POST /api/v1/research/candidate` applies timestamp, provenance, evidence, invalidation, risk-note and reviewed-rule gates. It can return only `NO_TRADE` or `ELIGIBLE_FOR_HUMAN_REVIEW`.\n- `POST /api/v1/ai/chat` optionally calls Cloudflare Workers AI through a server-side binding, with fixed research guardrails and no client-side AI secret. It is educational and does not create trade signals.
+- `POST /api/v1/research/candidate` applies timestamp, provenance, evidence, invalidation, risk-note and reviewed-rule gates. It can return only `NO_TRADE` or `ELIGIBLE_FOR_HUMAN_REVIEW`.
+- `POST /api/v1/ai/chat` optionally calls Cloudflare Workers AI through a server-side binding, with fixed research guardrails and no client-side AI secret. It is educational and does not create trade signals.
 - `POST /api/v1/backtest/sma-crossover` runs a simple long-only SMA research simulation on caller-supplied closes, with fee/slippage assumptions and drawdown. The dashboard includes a Backtest Lab that calls this endpoint after the user enters a deployed API URL. It is an educational baseline, not a validated strategy.
 - `POST /api/v1/ai/explain` optionally calls OpenAI or Anthropic using server-side secrets. It requires a separate `MARKETPILOT_API_KEY` request header and explains only supplied context; it is not a quote, signal or recommendation.
 
@@ -82,7 +84,7 @@ The React dashboard now includes an India F&O workbench (with a modelled Greeks 
 
 ## Free-first hosting
 
-The frontend remains on GitHub Pages. A lightweight Cloudflare Workers API is included under `cloudflare-worker/` as the free-first backend alternative to Render. See [Free deployment guide](docs/FREE_DEPLOYMENT.md) for setup and limits. The Worker handles health/status, option calculations, option-chain summaries, research readiness checks and the SMA crossover backtest. No database is required for the current browser-local single-user MVP.
+The frontend remains on GitHub Pages. A lightweight Cloudflare Workers API is included under `cloudflare-worker/` as the free-first backend alternative to Render. See [Free deployment guide](docs/FREE_DEPLOYMENT.md) for setup and limits. The Worker handles health/status, option calculations, option-chain summaries, research readiness checks, the SMA crossover backtest and optional Cloudflare Workers AI chat. No database is required for the current browser-local single-user MVP.
 
 ## Configuration
 
