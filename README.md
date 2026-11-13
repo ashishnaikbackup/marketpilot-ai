@@ -64,6 +64,14 @@ npm run dev
 
 The static frontend can be built and hosted independently. The current Greeks calculator, paper journal, report builder and watchlists work in the browser. Backend APIs can be run locally for API testing. No market data provider is configured; any sample overview values are labelled DEMO.
 
+## Research APIs added
+
+- `GET /api/v1/instruments` returns the bootstrap universe; lot sizes and expiry calendars remain intentionally unset until a dated authorised instrument master is configured.
+- `POST /api/v1/analytics/option-chain` calculates descriptive PCR, OI, change-in-OI, volume and concentration from caller-supplied rows. It does not fetch or verify exchange data.
+- `POST /api/v1/research/candidate` applies timestamp, provenance, evidence, invalidation, risk-note and reviewed-rule gates. It can return only `NO_TRADE` or `ELIGIBLE_FOR_HUMAN_REVIEW`.
+- `POST /api/v1/backtest/sma-crossover` runs a simple long-only SMA research simulation on caller-supplied closes, with fee/slippage assumptions and drawdown. It is an educational baseline, not a validated strategy.
+- `POST /api/v1/ai/explain` optionally calls OpenAI or Anthropic using server-side secrets. It explains only supplied context and is not a quote, signal or recommendation.
+
 ## First implemented API
 
 The React dashboard now includes an India F&O workbench (with a modelled Greeks calculator), a research readiness scanner, and a browser-local paper journal. The backend exposes provider-neutral quote/option-chain contracts but intentionally ships with no connected provider. The options expiry-payoff endpoint accepts multiple call/put legs and returns a spot-versus-gross-expiry-P&L curve. The Greeks endpoint calculates European Black-Scholes theoretical price, delta, gamma, annual theta and vega from user-supplied assumptions. A bounded bisection solver estimates model-implied volatility from a user-supplied option premium. A separate research gate rejects demo, stale, incomplete or unprovenanced data with NO_TRADE. These calculations do not include exchange quotes, fees, slippage, margin or a trade recommendation. See the OpenAPI docs, [model notes](docs/OPTIONS_MODELS.md), and [provider contract](docs/MARKET_DATA_PROVIDER.md) for details.
