@@ -63,10 +63,10 @@ Scheduled runner fetches MARKET_DATA_SNAPSHOT_URL?region=INDIA at 10:20 UTC week
    migrations_dir = "migrations"
 
 3. Apply cloudflare-worker/migrations/0001_paper_bot.sql to the remote database with Wrangler or the Cloudflare D1 console.
-4. Add Worker secrets MARKET_DATA_API_TOKEN and BOT_RUN_TOKEN if required.
+4. Add Worker secrets BOT_READ_TOKEN (required by the dashboard to read positions/reports), BOT_RUN_TOKEN (manual run endpoint), and MARKET_DATA_API_TOKEN (if required by the provider). Enter BOT_READ_TOKEN in the dashboard; it is held in session storage for that browser tab.
 5. Configure Worker variable MARKET_DATA_SNAPSHOT_URL to your private normalized provider adapter. Never expose a vendor token in the Pages frontend.
 6. Add the cron triggers in cloudflare-worker/wrangler.toml to the deployed Worker.
-7. Restrict API access using Cloudflare Access or another authentication layer before storing private paper-trading activity. CORS is not authentication. The read endpoints currently return paper account records to anyone who can reach the Worker; do not use sensitive personal data in them.
+7. Keep BOT_READ_TOKEN enabled and restrict API access using Cloudflare Access or another authentication layer before storing private paper-trading activity. CORS is not authentication. Read endpoints require a bearer token; the dashboard holds that read token in session storage only. Do not use sensitive personal data in paper reports.
 8. Keep AI_CHAT_ENABLED off until separate rate limiting and abuse monitoring are configured.
 
 The GitHub deployment workflow currently skips deployment unless CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are configured. Cloudflare setup and an actual data-provider entitlement are not supplied by this repository.
