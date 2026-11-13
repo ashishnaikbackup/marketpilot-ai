@@ -37,14 +37,15 @@ function sma(values, window) {
 async function route(request, env) {
   const url=new URL(request.url), path=url.pathname;
   if(request.method==="OPTIONS") return new Response(null,{status:204,headers:cors});
-  if(request.method==="GET" && (path==="/" || path==="/api/v1/health")) return json({status:"ok",service:"marketpilot-cloudflare-api",runtime:"cloudflare-workers",data_mode:"calculations_only",ai_binding_configured:Boolean(env?.AI?.run)});
-  if(request.method==="GET" && path==="/api/v1/ai/status") return json({available:Boolean(env?.AI?.run),provider:"cloudflare_workers_ai",model:"@cf/google/gemma-4-26b-a4b-it",mode:env?.AI?.run?"configured":"not_configured",disclaimer:"Binding availability only; does not guarantee inference capacity or free daily quota."});
+  if(request.method==="GET" && (path==="/" || path==="/api/v1/health")) return json({status:"ok",service:"marketpilot-cloudflare-api",runtime:"cloudflare-workers",data_mode:"calculations_only",ai_binding_configured:Boolean(env?.AI?.run),ai_chat_enabled:env?.AI_CHAT_ENABLED==="true"});
+  if(request.method==="GET" && path==="/api/v1/ai/status") { const enabled=env?.AI_CHAT_ENABLED==="true"; const configured=Boolean(env?.AI?.run); return json({available:enabled&&configured,enabled,provider:"cloudflare_workers_ai",model:"@cf/google/gemma-4-26b-a4b-it",mode:!enabled?"disabled_by_default":configured?"configured":"not_configured",disclaimer:"AI chat is disabled by default until rate limiting and abuse controls are configured. Binding availability does not guarantee inference capacity or free daily quota."}); }
   if(request.method==="GET" && path==="/api/v1/market-data/status") return json({provider_connected:false,provider:null,data_mode:"unavailable",instruments:[],message:"No licensed market-data provider is connected. Live analytics remain disabled."});
   if(request.method==="GET" && path==="/api/v1/instruments") return json({instruments:["NIFTY","BANKNIFTY","FINNIFTY"],source:"bootstrap_catalogue",contract_master_verified:false});
   if(request.method!=="POST") return error("Route not found.",404);
   const p=await body(request);
   try {
     if(path==="/api/v1/ai/chat"){
+      if(env?.AI_CHAT_ENABLED!=="true") return error("AI chat is disabled by default. Enable it only after configuring Cloudflare-side rate limiting and abuse monitoring.",503);
       if(!env?.AI?.run) return error("Workers AI binding is not configured. Add the AI binding named AI in Cloudflare Worker settings.",503);
       if(!Array.isArray(p.messages)||!p.messages.length||p.messages.length>12) throw Error("Provide 1 to 12 chat messages.");
       const messages=p.messages.map(m=>{
