@@ -1,6 +1,6 @@
 """Research data-quality gates. Missing or untrusted inputs always produce NO_TRADE."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter
@@ -52,7 +52,7 @@ def screen_research(payload: DataQualityRequest) -> dict:
     elif payload.observed_at.tzinfo is None:
         reasons.append("Observation timestamp must include a timezone.")
     else:
-        age_seconds = (datetime.now(timezone.utc) - payload.observed_at.astimezone(timezone.utc)).total_seconds()
+        age_seconds = (datetime.now(UTC) - payload.observed_at.astimezone(UTC)).total_seconds()
         if age_seconds < -60:
             reasons.append("Observation timestamp is in the future.")
         elif age_seconds > 300:
