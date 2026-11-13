@@ -24,7 +24,7 @@ export default function AutoPaperTrader(){
  },[api,readToken]);
  useEffect(()=>{if(api)void refresh();},[api,refresh]);
  const open=positions.filter(p=>p.status==="OPEN"),latest=reports[0],decisions=latest?.report?.decisions||[],buys=decisions.filter(d=>d.action==="PAPER_BUY"),exits=decisions.filter(d=>d.action==="CLOSE");
- const schedule=status?.schedule_utc||["10:20 UTC weekdays — India closing scan","22:30 UTC weekdays — global closing scan"];
+ const schedule=status?.schedule_utc||["Every 5 minutes during India cash/F&O session (09:15–15:30 IST)","Every 15 minutes for global market coverage (provider session-aware)","India EOD report at 10:20 UTC; global EOD report at 22:30 UTC"];
  return <div className="page-stack">
   <div className="notice"><ShieldCheck size={17}/><div><strong>Autonomous paper trader · virtual money only</strong><span>It scans, simulates entries/exits and writes reports. It never connects to a broker or places real orders. Live operation requires a licensed data adapter and Cloudflare D1.</span></div><span className="notice-tag">PAPER ONLY</span></div>
   <section className="panel paperbot-connect"><div className="panel-title"><div><h3>Connect the paper-trading service</h3><p>Cloudflare Worker URL and your separate paper-bot read token. Never enter broker passwords or provider API keys here.</p></div><Bot size={19} className="muted-icon"/></div>
@@ -40,7 +40,7 @@ export default function AutoPaperTrader(){
   <section className="panel"><div className="panel-title"><div><h3>How the bot thinks</h3><p>Repeatable process, not impulsive trades</p></div><Activity size={18} className="muted-icon"/></div>
    <div className="paperbot-flow"><article><b>01 · Scan</b><span>India/global equities, ETFs and supported option contracts in the provider's configured universe.</span></article><article><b>02 · Verify</b><span>Check source, timestamp, quote freshness, bid/ask, expiry, liquidity and option Greeks.</span></article><article><b>03 · Decide</b><span>Trend, RSI and momentum rules. CE for bullish and PE for bearish underlying trends. Otherwise NO TRADE.</span></article><article><b>04 · Simulate</b><span>Virtual position sizing, stops, targets, mark-to-market and realised P&amp;L.</span></article><article><b>05 · Explain</b><span>Every buy, hold, exit and rejection records its reason and source timestamp.</span></article></div>
   </section>
-  <section className="panel"><div className="panel-title"><div><h3>Scheduled reports</h3><p>India and global end-of-day windows · UTC</p></div><Clock3 size={18} className="muted-icon"/></div>
+  <section className="panel"><div className="panel-title"><div><h3>Scheduled reports</h3><p>Intraday scans plus end-of-day summaries</p></div><Clock3 size={18} className="muted-icon"/></div>
    {schedule.map(x=><div className="report-row" key={x}><div className="report-icon"><Clock3 size={15}/></div><div><strong>{x}</strong><span>Runs only when D1 and the normalized data adapter are configured.</span></div><b className="pill muted">SCHEDULED</b></div>)}
    <p className="disclaimer-small">These are report windows, not guaranteed data availability. Holidays, provider outages, DST and market-specific closes must be handled by the feed adapter.</p>
   </section>
