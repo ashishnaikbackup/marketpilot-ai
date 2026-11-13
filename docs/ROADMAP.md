@@ -38,7 +38,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Historical volatility and IV context
 - [ ] Explicit stale/missing-data states
 
-- [x] Transparent long-only SMA crossover research backtest API with fee/slippage assumptions and drawdown; [ ] robust multi-strategy walk-forward engine
+- [x] Transparent long-only SMA crossover research backtest API and dashboard workspace with fee/slippage assumptions and drawdown; [ ] robust multi-strategy walk-forward engine
 - [x] Candidate review gate with evidence, invalidation, risk notes, freshness and versioned rule ID; returns human-review eligibility only
 
 ### Milestone 4 — Research engine
