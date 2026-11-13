@@ -40,7 +40,23 @@ export default function MoneyManager(){
  function saveBudget(){const n=Number(budgetAmount);if(!(n>0)||!Number.isFinite(n)){setError("Enter a valid monthly budget.");return;}const b={...budgets,[budgetCat]:n};setBudgets(b);persist(transactions,b);setBudgetAmount("");setError("");}
  function addGoal(){const target=Number(goalTarget),saved=Number(goalSaved);if(!goalName.trim()||!(target>0)||saved<0||saved>target){setError("Enter a goal name, valid target and saved amount not above the target.");return;}const g=[{id:id(),name:goalName.trim(),target,saved,due:goalDue},...goals];setGoals(g);persist(transactions,budgets,g);setGoalName("");setGoalTarget("");setGoalSaved("0");setGoalDue("");setError("");}
  function contribute(goal:Goal){const n=Number(goalContribution[goal.id]);if(!(n>0)||goal.saved+n>goal.target){setError("Contribution must be positive and cannot exceed the goal target.");return;}const g=goals.map(x=>x.id===goal.id?{...x,saved:x.saved+n}:x);setGoals(g);persist(transactions,budgets,g);setGoalContribution(x=>({...x,[goal.id]:""}));setError("");}
- function importCsv(file:File){void file.text().then(text=>{const lines=text.trim().split(/\r?\n/);const head=lines.shift()?.toLowerCase().split(",").map(x=>x.trim())||[];const ix=(k:string)=>head.indexOf(k);if(ix("date")<0||ix("type")<0||ix("category")<0||ix("amount")<0)throw Error("CSV headers must include date,type,category,amount (optional note).");const rows:Tx[]=lines.filter(Boolean).map((line,i)=>{const p=line.split(",");const txType=p[ix("type")]?.trim().toLowerCase();const n=Number(p[ix("amount")]);const d=p[ix("date")]?.trim();if(!["income","expense"].includes(txType)||!(n>0)||!/^\d{4}-\d{2}-\d{2}$/.test(d))throw Error("Invalid transaction on CSV row "+(i+2));return {id:id(),date:d,type:txType as Tx["type"],category:p[ix("category")]?.trim()||"Other",amount:n,note:ix("note")>=0?p[ix("note")]?.trim()||"":""];});const t=[...rows,...transactions];setTransactions(t);persist(t);setError("");}).catch(e=>setError(e instanceof Error?e.message:"CSV import failed."));}
+ function importCsv(file:File){
+  void file.text().then(text=>{
+   const lines=text.trim().split(/\r?\n/);
+   const head=lines.shift()?.toLowerCase().split(",").map(x=>x.trim())||[];
+   const ix=(k:string)=>head.indexOf(k);
+   if(ix("date")<0||ix("type")<0||ix("category")<0||ix("amount")<0) throw Error("CSV headers must include date,type,category,amount (optional note).");
+   const rows:Tx[]=lines.filter(Boolean).map((line,i)=>{
+    const p=line.split(",");
+    const txType=p[ix("type")]?.trim().toLowerCase();
+    const n=Number(p[ix("amount")]);
+    const d=p[ix("date")]?.trim();
+    if(!["income","expense"].includes(txType)||!(n>0)||!/^\d{4}-\d{2}-\d{2}$/.test(d)) throw Error("Invalid transaction on CSV row "+(i+2));
+    return {id:id(),date:d,type:txType as Tx["type"],category:p[ix("category")]?.trim()||"Other",amount:n,note:ix("note")>=0?(p[ix("note")]?.trim()||""):""};
+   });
+   const t=[...rows,...transactions];setTransactions(t);persist(t);setError("");
+  }).catch(e=>setError(e instanceof Error?e.message:"CSV import failed."));
+ }
  function exportCsv(){const rows=["date,type,category,amount,note",...transactions.map(x=>[x.date,x.type,x.category,x.amount,JSON.stringify(x.note)].join(","))].join("\n");const blob=new Blob([rows],{type:"text/csv"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="marketpilot-transactions.csv";a.click();URL.revokeObjectURL(url);}
  return <div className="page-stack money-manager">
   <div className="notice"><ShieldCheck size={17}/><div><strong>Personal finance workspace · private to this browser</strong><span>Track income, expenses, budgets and savings goals. No bank connection, account sync or financial data leaves this browser unless you explicitly share it with the optional AI Copilot.</span></div><span className="notice-tag">LOCAL</span></div>
