@@ -61,7 +61,9 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 
 ### Milestone 6 — Portfolio and paper trading
 - [x] Browser-local paper trade journal with manual entry/exit and closed P&L; [ ] virtual cash, positions and full order lifecycle
-- [x] Browser-local trade journal with thesis, direction, stop and target fields\n- [x] FinPilot-style manual holdings ledger with INR-converted unrealised P&L and user-entered FX; [ ] persistent account-backed holdings and realised/unrealised performance
+- [x] Browser-local trade journal with thesis, direction, stop and target fields
+- [x] FinPilot-style manual holdings ledger with INR-converted unrealised P&L and user-entered FX; [ ] persistent account-backed holdings and realised/unrealised performance
+- [x] Position-sizing, stop-loss/target, risk-budget and reward/risk calculator; [ ] execution-aware portfolio-level risk aggregation
 - [ ] P&L, drawdown, exposure and risk limits
 - [ ] Replay and paper-trade evaluation
 - [ ] No broker order routing in this milestone
@@ -75,7 +77,12 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Scheduler, retries, audit logs and notification preferences
 
 ### Milestone 8 — Global research
-- [x] Global asset-class workspace and browser-local watchlist shell; [ ] live US and major global indices\n- [x] Asset comparison from user-entered return/volatility/cost assumptions; [ ] source-backed fund/stock/ETF fundamentals comparison\n- [x] SIP, lump-sum and goal calculators\n- [x] CSV historical asset analyzer with CAGR, volatility, max drawdown, RSI and SMA20/50; [ ] validated adjusted-price history, dividends and benchmark-aware analytics\n- [x] Self-paced Academy with quizzes and local progress; [ ] structured curriculum assessments and synced learner profiles\n- [x] India market-session education and risk checklist; [ ] provider-backed intraday timing analysis
+- [x] Global asset-class workspace and browser-local watchlist shell; [ ] live US and major global indices
+- [x] Asset comparison from user-entered return/volatility/cost assumptions; [ ] source-backed fund/stock/ETF fundamentals comparison
+- [x] SIP, lump-sum and goal calculators
+- [x] CSV historical asset analyzer with CAGR, volatility, max drawdown, RSI and SMA20/50; [ ] validated adjusted-price history, dividends and benchmark-aware analytics
+- [x] Self-paced Academy with quizzes and local progress; [ ] structured curriculum assessments and synced learner profiles
+- [x] India and selected US/Asia market-session references plus risk checklist; [ ] timezone-aware live calendar and provider-backed intraday timing analysis
 - [ ] Global equities and ETFs
 - [ ] FX, commodities, bonds and macro indicators
 - [ ] Mutual funds/SIPs and long-term asset research
