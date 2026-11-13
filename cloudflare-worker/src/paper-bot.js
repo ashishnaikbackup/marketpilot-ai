@@ -44,7 +44,7 @@ async function run(snapshot,env,trigger="manual"){
   if(!i||!i.symbol||!["EQUITY","ETF"].includes(i.asset_class))continue;
   const s=trend(i);if(s.side!=="BULLISH")continue;
   if(!fresh(i.quote,nowMs)){decisions.push({symbol:i.symbol,action:"SKIP",reason:"Fresh bid/ask unavailable."});continue;}
-  const existing=await env.DB.prepare("SELECT id FROM bot_positions WHERE region=? AND symbol=? AND status='OPEN'").bind(region,i.symbol).first();if(existing)continue;
+  if(existingSymbols.has(i.symbol))continue;
   const entry=i.quote.ask,stop=entry*.97,target=entry*1.06,risk=equity*.0025,qty=Math.floor(Math.min(risk/(entry-stop),equity*.08/entry));
   if(qty<1){decisions.push({symbol:i.symbol,action:"SKIP",reason:"Below minimum size under risk budget."});continue;}
   candidates.push({i,s,entry,stop,target,qty,score:s.momentum});
@@ -60,7 +60,7 @@ async function run(snapshot,env,trigger="manual"){
   const s=signals.get(o.underlying);if(!s||!["BULLISH","BEARISH"].includes(s.side)||!o.contract_id||!o.symbol||!fresh(o,nowMs))continue;
   const right=region==="INDIA"?(s.side==="BULLISH"?"CE":"PE"):(s.side==="BULLISH"?"CALL":"PUT"),expiry=Date.parse(region==="INDIA"?o.expiry+"T15:30:00+05:30":o.expiry+"T23:59:59Z"),dte=(expiry-nowMs)/86400000,mid=(o.bid+o.ask)/2,underlyingQuote=instruments.get(o.underlying)?.quote;
   if(!fresh(underlyingQuote,nowMs)||!Number.isFinite(expiry)||o.option_type!==right||!finite(o.strike)||!Number.isInteger(o.lot_size)||o.lot_size<1||!finite(o.delta)||Math.abs(o.delta)<.35||Math.abs(o.delta)>.65||!finite(o.iv)||o.iv<=0||o.iv>1.5||!Number.isInteger(o.open_interest)||o.open_interest<(region==="INDIA"?500:100)||!Number.isInteger(o.volume)||o.volume<(region==="INDIA"?50:10)||dte<7||dte>(region==="INDIA"?45:60)||mid<=0||(o.ask-o.bid)/mid>(region==="INDIA"?.025:.05))continue;
-  const existing=await env.DB.prepare("SELECT id FROM bot_positions WHERE region=? AND instrument_id=? AND status='OPEN'").bind(region,o.contract_id).first();if(existing)continue;
+  if(existingContracts.has(o.contract_id))continue;
   optionPicks.push({o,s,rank:Math.abs(Math.abs(o.delta)-.5)+(o.ask-o.bid)/mid});
  }
  optionPicks.sort((a,b)=>a.rank-b.rank);
@@ -79,7 +79,7 @@ async function run(snapshot,env,trigger="manual"){
 }
 export async function paperBotRoute(request,env,url){
  const path=url.pathname;
- if(request.method==="GET"&&path==="/api/v1/paper-bot/status")return json({configured:Boolean(env?.DB),feed_configured:Boolean(env?.MARKET_DATA_SNAPSHOT_URL),mode:"paper_only",strategy_version:"trend-options-v1",schedule_utc:["10:20 UTC weekdays — India closing scan","22:30 UTC weekdays — global closing scan"],message:!env?.DB?"D1 database is not configured.":!env?.MARKET_DATA_SNAPSHOT_URL?"Normalized licensed market-data adapter is not configured.":"Bot services are configured; verify provider entitlements and data quality."});
+ if(request.method==="GET"&&path==="/api/v1/paper-bot/status")return json({configured:Boolean(env?.DB),feed_configured:Boolean(env?.MARKET_DATA_SNAPSHOT_URL),mode:"paper_only",strategy_version:"trend-options-v1",schedule_utc:["Every 5 minutes during India cash/F&O session (09:15–15:30 IST)","Every 15 minutes for global market coverage (provider session-aware)","India EOD report at 10:20 UTC; global EOD report at 22:30 UTC"],message:!env?.DB?"D1 database is not configured.":!env?.MARKET_DATA_SNAPSHOT_URL?"Normalized licensed market-data adapter is not configured.":"Bot services are configured; verify provider entitlements and data quality."});
  if(request.method==="GET"&&path==="/api/v1/paper-bot/positions"){
   if(!env?.DB)return error("D1 database is not configured.",503);
   if(!env.BOT_READ_TOKEN)return error("Paper bot read access is disabled until BOT_READ_TOKEN is configured.",503);
@@ -103,14 +103,25 @@ export async function paperBotRoute(request,env,url){
 }
 export async function scheduledPaperBot(event,env){
  if(!env?.DB||!env?.MARKET_DATA_SNAPSHOT_URL)return;
- const region=new Date(event.scheduledTime).getUTCHours()===10?"INDIA":"GLOBAL";
- try{
-  const u=new URL(env.MARKET_DATA_SNAPSHOT_URL);u.searchParams.set("region",region);u.searchParams.set("purpose","paper-trading-eod");
-  const r=await fetch(u.toString(),{headers:env.MARKET_DATA_API_TOKEN?{Authorization:"Bearer "+env.MARKET_DATA_API_TOKEN}:{}});
-  if(!r.ok)throw Error("Provider adapter HTTP "+r.status);
-  await run(await r.json(),env,"scheduled_eod");
- }catch(e){
-  const at=now();await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?, ?,?,?,?,?,?,0,0,0,0,?)")
-   .bind(id(),region,"scheduled_eod","unavailable","unavailable",at,at,now(),"skipped",JSON.stringify({status:"skipped",region,reason:e instanceof Error?e.message:"Market data unavailable."})).run();
+ const utc=new Date(event.scheduledTime),hour=utc.getUTCHours(),minute=utc.getUTCMinutes();
+ const ist=new Date(event.scheduledTime+330*60000),istMinutes=ist.getUTCHours()*60+ist.getUTCMinutes();
+ const indiaWeekday=ist.getUTCDay()>=1&&ist.getUTCDay()<=5;
+ const indiaSession=indiaWeekday&&istMinutes>=555&&istMinutes<=930;
+ const runIndia=indiaSession||(hour===10&&minute===20);
+ const runGlobal=minute%15===0;
+ const tasks=[];
+ if(runIndia)tasks.push("INDIA");
+ if(runGlobal)tasks.push("GLOBAL");
+ for(const region of tasks){
+  const eod=(region==="INDIA"&&hour===10&&minute===20)||(region==="GLOBAL"&&hour===22&&minute===30);
+  try{
+   const u=new URL(env.MARKET_DATA_SNAPSHOT_URL);u.searchParams.set("region",region);u.searchParams.set("purpose",eod?"paper-trading-eod":"paper-trading-intraday");
+   const r=await fetch(u.toString(),{headers:env.MARKET_DATA_API_TOKEN?{Authorization:"Bearer "+env.MARKET_DATA_API_TOKEN}:{}});
+   if(!r.ok)throw Error("Provider adapter HTTP "+r.status);
+   await run(await r.json(),env,eod?"scheduled_eod":"scheduled_intraday");
+  }catch(e){
+   const at=now();await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?, ?,?,?,?,?,?,0,0,0,0,?)")
+    .bind(id(),region,eod?"scheduled_eod":"scheduled_intraday","unavailable","unavailable",at,at,now(),"skipped",JSON.stringify({status:"skipped",region,reason:e instanceof Error?e.message:"Market data unavailable."})).run();
+  }
  }
 }
