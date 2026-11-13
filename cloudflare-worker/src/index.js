@@ -1,8 +1,9 @@
 import { paperBotRoute, scheduledPaperBot } from "./paper-bot.js";
+import { corsHeaders, rateLimit, clientId, limitsFor } from "./security.js";
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type,Authorization",
   "Cache-Control": "no-store",
 };
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
@@ -131,4 +132,31 @@ async function route(request, env) {
     return error("Route not found.",404);
   } catch(e){return error(e instanceof Error?e.message:"Invalid request.");}
 }
-export default { fetch: route, scheduled: (event, env, ctx) => { ctx.waitUntil(scheduledPaperBot(event, env)); } };
+async function secureFetch(request, env) {
+  const url = new URL(request.url);
+  const headers = corsHeaders(request, env);
+  const finish = (response) => {
+    response.headers.delete("Access-Control-Allow-Origin");
+    for (const [k, v] of Object.entries(headers)) response.headers.set(k, v);
+    return response;
+  };
+  if (request.method === "OPTIONS") return finish(new Response(null, { status: 204 }));
+  const { rpm, maxBytes } = limitsFor(request.method, url.pathname);
+  const limited = rateLimit(clientId(request) + "|" + request.method + "|" + url.pathname, rpm);
+  if (!limited.ok) {
+    const r = error("Too many requests. Please slow down.", 429);
+    r.headers.set("Retry-After", String(limited.retryAfter));
+    return finish(r);
+  }
+  if (request.method === "POST") {
+    const declared = Number(request.headers.get("Content-Length"));
+    if (Number.isFinite(declared) && declared > maxBytes) return finish(error("Request body is too large.", 413));
+    if (!request.headers.has("Content-Length")) {
+      const size = (await request.clone().arrayBuffer()).byteLength;
+      if (size > maxBytes) return finish(error("Request body is too large.", 413));
+    }
+  }
+  try { return finish(await route(request, env)); }
+  catch { return finish(error("Unexpected server error.", 500)); }
+}
+export default { fetch: secureFetch, scheduled: (event, env, ctx) => { ctx.waitUntil(scheduledPaperBot(event, env)); } };

@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -25,10 +29,53 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: npm install
-      - name: Deploy Worker
-        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
-        run: npx wrangler deploy
+      - run: npm ci || npm install
+      - run: npm test
+
       - name: Skip deployment until Cloudflare secrets are configured
         if: ${{ env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == '' }}
-        run: echo "Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in GitHub repository Actions secrets to enable automatic API deployment."
+        run: |
+          echo "::notice::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as GitHub Actions secrets to enable deployment. See docs/SETUP_CHECKLIST.md."
+
+      - name: Create or find the D1 database and render deploy config
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: node scripts/provision.mjs
+
+      - name: Apply database migrations
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: npx wrangler d1 migrations apply DB --remote --config wrangler.generated.toml
+
+      - name: Deploy Worker
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: npx wrangler deploy --config wrangler.generated.toml
+
+      - name: Sync Worker secrets from GitHub secrets (only those that are set)
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        env:
+          BOT_READ_TOKEN: ${{ secrets.BOT_READ_TOKEN }}
+          BOT_RUN_TOKEN: ${{ secrets.BOT_RUN_TOKEN }}
+          MARKET_DATA_API_TOKEN: ${{ secrets.MARKET_DATA_API_TOKEN }}
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          for name in BOT_READ_TOKEN BOT_RUN_TOKEN MARKET_DATA_API_TOKEN TWELVEDATA_API_KEY TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID; do
+            value="${!name}"
+            if [ -n "$value" ]; then
+              printf '%s' "$value" | npx wrangler secret put "$name" --config wrangler.generated.toml >/dev/null
+              echo "Set Worker secret $name"
+            else
+              echo "::notice::GitHub secret $name is not set; skipped."
+            fi
+          done
+
+      - name: Smoke test deployed API
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          url=$(npx wrangler deployments list --config wrangler.generated.toml 2>/dev/null | grep -Eo 'https://[a-z0-9.-]+\.workers\.dev' | head -1 || true)
+          if [ -z "$url" ]; then
+            sub=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("result",{}).get("subdomain",""))')
+            [ -n "$sub" ] && url="https://marketpilot-api.$sub.workers.dev"
+          fi
+          echo "::notice::Worker URL: ${url:-unknown}"
+          [ -n "$url" ] && curl -fsS "$url/api/v1/health" && echo && curl -fsS "$url/api/v1/paper-bot/status"

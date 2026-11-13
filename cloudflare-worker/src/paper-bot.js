@@ -1,3 +1,4 @@
+import { hasBearer } from "./security.js";
 const json=(x,status=200)=>new Response(JSON.stringify(x),{status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type,Authorization"}});
 const error=(s,n=422)=>json({detail:s},n);
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
@@ -99,20 +100,20 @@ export async function paperBotRoute(request,env,url){
  if(request.method==="GET"&&path==="/api/v1/paper-bot/positions"){
   if(!env?.DB)return error("D1 database is not configured.",503);
   if(!env.BOT_READ_TOKEN)return error("Paper bot read access is disabled until BOT_READ_TOKEN is configured.",503);
-  if(request.headers.get("Authorization")!=="Bearer "+env.BOT_READ_TOKEN)return error("Valid paper bot read token required.",401);
+  if(!hasBearer(request,env.BOT_READ_TOKEN))return error("Valid paper bot read token required.",401);
   const region=url.searchParams.get("region"),r=region?await env.DB.prepare("SELECT * FROM bot_positions WHERE region=? ORDER BY opened_at DESC LIMIT 200").bind(region).all():await env.DB.prepare("SELECT * FROM bot_positions ORDER BY opened_at DESC LIMIT 200").all();
   return json({positions:r.results||[],mode:"paper_only"});
  }
  if(request.method==="GET"&&path==="/api/v1/paper-bot/reports"){
   if(!env?.DB)return error("D1 database is not configured.",503);
   if(!env.BOT_READ_TOKEN)return error("Paper bot read access is disabled until BOT_READ_TOKEN is configured.",503);
-  if(request.headers.get("Authorization")!=="Bearer "+env.BOT_READ_TOKEN)return error("Valid paper bot read token required.",401);
+  if(!hasBearer(request,env.BOT_READ_TOKEN))return error("Valid paper bot read token required.",401);
   const r=await env.DB.prepare("SELECT id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json FROM bot_runs ORDER BY started_at DESC LIMIT 50").all();
   return json({reports:(r.results||[]).map(x=>({...x,report:JSON.parse(x.report_json||"{}")}))});
  }
  if(request.method==="POST"&&path==="/api/v1/paper-bot/run"){
   if(!env?.DB)return error("D1 database is not configured.",503);
-  if(!env.BOT_RUN_TOKEN||request.headers.get("Authorization")!=="Bearer "+env.BOT_RUN_TOKEN)return error("Valid server-side BOT_RUN_TOKEN required.",401);
+  if(!hasBearer(request,env.BOT_RUN_TOKEN))return error("Valid server-side BOT_RUN_TOKEN required.",401);
   try{const p=await request.json();return json(await run(p.snapshot,env,"manual"));}catch(e){return error(e instanceof Error?e.message:"Invalid paper-bot request.");}
  }
  return null;
