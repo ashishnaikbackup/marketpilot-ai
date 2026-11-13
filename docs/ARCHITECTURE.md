@@ -3,18 +3,26 @@
 ## High-level design
 
 ```
-React + TypeScript dashboard
+React + TypeScript dashboard (GitHub Pages)
         |
-        | REST / JSON
+        +--> Browser localStorage
+        |      +--> Paper journal / holdings / research
+        |      +--> Money Manager / budgets / savings goals
+        |      +--> Imported option-chain snapshots
+        |
+        | HTTPS / JSON
         v
-FastAPI application
+Cloudflare Worker (optional free API)
   |       |          |
-  |       |          +--> AI provider gateway (OpenAI / Claude; server-side)
-  |       +--> Research and risk domain services
-  +--> Market data provider interfaces
+  |       |          +--> Workers AI binding (optional Gemma chat)
+  |       +--> Deterministic options / chain / backtest calculations
+  +--> Research readiness gate (fail closed)
         |
-        v
-PostgreSQL (planned) + background job queue (planned)
+        +--> Licensed market-data provider (NOT CONNECTED)
+        +--> Persistent database / scheduler (FUTURE)
+
+FastAPI application (local/self-hosted alternative)
+  +--> Existing domain APIs and optional OpenAI/Anthropic adapters
 ```
 
 ## Backend boundaries
@@ -51,8 +59,8 @@ A value without provenance must not be presented as a current market quote.
 
 ## AI boundary
 
-LLMs explain validated structured data and cited documents; they do not invent quotes, calculate authoritative P&L, or bypass risk gates. Numeric calculations stay in deterministic code. Store model, prompt version, input references, output timestamp and citations for each report.
+LLMs explain validated structured data and cited documents; they do not invent quotes, calculate authoritative P&L, or bypass risk gates. The current Workers AI Copilot receives recent chat plus a compact summary of browser-local user records. It is a single model call with a fixed research policy, not yet a multi-agent system or external retrieval engine. Numeric calculations stay in deterministic code. Store model, prompt version, input references, output timestamp and citations for each report.
 
 ## Deployment evolution
 
-Start with a modular monolith. Add a job worker and PostgreSQL when scheduled reports and persistent portfolios are implemented. Avoid premature microservices.
+Start with a modular monolith. The public dashboard is static; the Cloudflare Worker is the optional stateless API. Current personal data stays in browser localStorage. Add authenticated per-user persistence and a scheduled job service only when the product needs account sync and background alerts. Do not mistake GitHub Pages for a backend.
