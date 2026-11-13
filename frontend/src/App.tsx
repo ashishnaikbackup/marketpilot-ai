@@ -3,6 +3,8 @@ import PayoffCalculator from "./PayoffCalculator";
 import FOWorkbench from "./FOWorkbench";
 import OpportunityScanner from "./OpportunityScanner";
 import PaperPortfolio from "./PaperPortfolio";
+import ResearchReports from "./ResearchReports";
+import Learn from "./Learn";
 import {
   Activity, ArrowDownRight, ArrowUpRight, BarChart3, Bell, BookOpen,
   CalendarDays, ChevronDown, CircleHelp, Compass, Globe2, LayoutDashboard,
@@ -53,7 +55,7 @@ export default function App() {
         <section className="section-block lower-grid"><article className="panel"><div className="panel-title"><div><h3>Opportunity scanner</h3><p>Evidence-led candidates, including NO TRADE</p></div><Target size={18} className="muted-icon"/></div><div className="empty-state"><div className="empty-icon"><Compass size={21}/></div><strong>No opportunities generated</strong><span>Scanner stays inactive until reliable market data and tested rules are configured.</span></div></article>
           <article className="panel"><div className="panel-title"><div><h3>Research schedule</h3><p>Automated reporting roadmap</p></div><CalendarDays size={18} className="muted-icon"/></div>{[{title:"Pre-market brief",desc:"India cues · global markets · event calendar",icon:TrendingUp},{title:"Closing report",desc:"Index recap · breadth · F&O activity",icon:BarChart3},{title:"Weekly & monthly review",desc:"Performance · risk · themes · lessons",icon:CalendarDays}].map(({title,desc,icon:Icon})=><div className="report-row" key={title}><div className="report-icon"><Icon size={16}/></div><div><strong>{title}</strong><span>{desc}</span></div><b className="pill muted">Planned</b></div>)}</article></section>
         <footer><span>MARKETPILOT AI <i>·</i> RESEARCH FIRST</span><span>Market data is illustrative until a licensed source is connected.</span></footer>
-        </> : active === "F&O Workbench" ? <FOWorkbench /> : active === "Opportunity Scanner" ? <OpportunityScanner /> : active === "Paper Portfolio" ? <PaperPortfolio /> : active === "Strategy Lab" ? <PayoffCalculator /> : <section className="panel coming-soon"><div className="chain-icon"><BookOpen size={22}/></div><h3>{active} workspace</h3><p>This module is in the next delivery milestone. No fabricated market data is shown here.</p><span className="pill muted">IN DEVELOPMENT</span></section>}
+        </> : active === "F&O Workbench" ? <FOWorkbench /> : active === "Opportunity Scanner" ? <OpportunityScanner /> : active === "Paper Portfolio" ? <PaperPortfolio /> : active === "Research Reports" ? <ResearchReports /> : active === "Learn" ? <Learn /> : active === "Strategy Lab" ? <PayoffCalculator /> : <section className="panel coming-soon"><div className="chain-icon"><BookOpen size={22}/></div><h3>{active} workspace</h3><p>This module is in the next delivery milestone. No fabricated market data is shown here.</p><span className="pill muted">IN DEVELOPMENT</span></section>}
       </div>
     </main>
   </div>;
