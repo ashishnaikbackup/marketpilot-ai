@@ -68,7 +68,18 @@ export default function MarketPilotCopilot() {
       let context = "";
       try {
         const saved = JSON.parse(localStorage.getItem("marketpilot.latestIndiaChain.v1") || "null");
-        if (saved?.metrics) context = JSON.stringify({instrument:saved.instrument,expiry:saved.expiry,source:saved.source,observedAt:saved.observedAt,metrics:saved.metrics});
+        const money = JSON.parse(localStorage.getItem("marketpilot.moneyManager.v1") || "null");
+        const parts: string[] = [];
+        if (saved?.metrics) parts.push("Imported Indian option-chain snapshot (unverified): " + JSON.stringify({instrument:saved.instrument,expiry:saved.expiry,source:saved.source,observedAt:saved.observedAt,metrics:saved.metrics}));
+        if (money) {
+          const tx = Array.isArray(money.transactions) ? money.transactions : [];
+          const month = new Date().toISOString().slice(0,7);
+          const recent = tx.filter((x:any)=>typeof x.date==="string"&&x.date.startsWith(month));
+          const income = recent.filter((x:any)=>x.type==="income").reduce((s:number,x:any)=>s+(Number(x.amount)||0),0);
+          const expenses = recent.filter((x:any)=>x.type==="expense").reduce((s:number,x:any)=>s+(Number(x.amount)||0),0);
+          parts.push("Personal finance summary (local browser records, current month only): " + JSON.stringify({month,income,expenses,netCashFlow:income-expenses,transactionCount:recent.length,budgets:money.budgets||{},savingsGoals:Array.isArray(money.goals)?money.goals.map((g:any)=>({name:g.name,target:g.target,saved:g.saved,due:g.due})):[]}));
+        }
+        context = parts.join("\\n").slice(0,6000);
       } catch { context = ""; }
       const response = await fetch(base + "/api/v1/ai/chat", {
         method: "POST",
