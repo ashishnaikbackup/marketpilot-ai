@@ -41,7 +41,7 @@ async function run(snapshot,env,trigger="manual"){
  const equity=Number(account.starting_cash)+Number(accountAfter?.pnl||0)+unrealized;
  const candidates=[];
  for(const i of snapshot.instruments){
-  if(!i||!i.symbol||!["EQUITY","ETF","INDEX"].includes(i.asset_class))continue;
+  if(!i||!i.symbol||!["EQUITY","ETF"].includes(i.asset_class))continue;
   const s=trend(i);if(s.side!=="BULLISH")continue;
   if(!fresh(i.quote,nowMs)){decisions.push({symbol:i.symbol,action:"SKIP",reason:"Fresh bid/ask unavailable."});continue;}
   const existing=await env.DB.prepare("SELECT id FROM bot_positions WHERE region=? AND symbol=? AND status='OPEN'").bind(region,i.symbol).first();if(existing)continue;
