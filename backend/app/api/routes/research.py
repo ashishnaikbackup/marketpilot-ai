@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 router = APIRouter(tags=["research"])
+REQUIRED_MARKET_FIELDS = {"underlying_price", "option_chain", "open_interest", "implied_volatility"}
 
 
 class DataQualityRequest(BaseModel):
@@ -15,9 +16,6 @@ class DataQualityRequest(BaseModel):
     exchange: str | None = None
     data_mode: Literal["live", "delayed", "eod", "historical", "demo", "unavailable"] = "demo"
     observed_at: datetime | None = None
-    required_fields: list[str] = Field(default_factory=lambda: [
-        "underlying_price", "option_chain", "open_interest", "implied_volatility"
-    ])
     available_fields: list[str] = Field(default_factory=list)
     strategy_rules_validated: bool = False
 
@@ -36,7 +34,7 @@ def market_data_status() -> dict:
 
 @router.post("/research/screen", summary="Apply research data-quality gates")
 def screen_research(payload: DataQualityRequest) -> dict:
-    missing = sorted(set(payload.required_fields) - set(payload.available_fields))
+    missing = sorted(REQUIRED_MARKET_FIELDS - set(payload.available_fields))
     reasons: list[str] = []
 
     if payload.data_mode == "demo":
