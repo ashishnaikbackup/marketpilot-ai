@@ -52,19 +52,21 @@ async function run(snapshot,env,trigger="manual"){
  const equity=Number(account.starting_cash)+Number(accountAfter?.pnl||0)+unrealized;
  const candidates=[];
  for(const i of snapshot.instruments){
-  if(!i||!i.symbol||!["EQUITY","ETF"].includes(i.asset_class))continue;
+  if(!i||!i.symbol||!["EQUITY","ETF","FUTURE"].includes(i.asset_class))continue;
+  const lotSize=i.asset_class==="FUTURE"?i.lot_size:1;
+  if(!Number.isInteger(lotSize)||lotSize<1||(i.asset_class==="FUTURE"&&(!i.instrument_id||!i.expiry||!Number.isFinite(Date.parse(i.expiry))||Date.parse(i.expiry)<=nowMs))){decisions.push({symbol:i.symbol,action:"SKIP",reason:"Future contract ID, expiry or lot size is missing/invalid."});continue;}
   const s=trend(i);if(s.side!=="BULLISH")continue;
   if(!fresh(i.quote,nowMs)){decisions.push({symbol:i.symbol,action:"SKIP",reason:"Fresh bid/ask unavailable."});continue;}
   if(existingSymbols.has(i.symbol))continue;
-  const entry=i.quote.ask,stop=entry*.97,target=entry*1.06,risk=equity*.0025,qty=Math.floor(Math.min(risk/(entry-stop),equity*.08/entry));
+  const entry=i.quote.ask,stop=entry*.97,target=entry*1.06,risk=equity*.0025,qty=Math.floor(Math.min(risk/((entry-stop)*lotSize),equity*.08/(entry*lotSize)));
   if(qty<1){decisions.push({symbol:i.symbol,action:"SKIP",reason:"Below minimum size under risk budget."});continue;}
-  candidates.push({i,s,entry,stop,target,qty,score:s.momentum});
+  candidates.push({i,s,entry,stop,target,qty,lotSize,score:s.momentum});
  }
  candidates.sort((a,b)=>b.score-a.score);
  for(const x of candidates.slice(0,slots)){
-  const pid=id();await env.DB.prepare("INSERT INTO bot_positions (id,region,symbol,instrument_id,asset_class,side,option_type,strike,expiry,quantity,lot_size,entry_price,last_price,stop_price,target_price,status,opened_at,last_observed_at,source,run_id,thesis,exit_reason,realized_pnl) VALUES (?,?,?,?,?,'LONG',NULL,NULL,NULL,?,1,?,?,?,?, 'OPEN',?,?,?,?,?,NULL,0)")
-   .bind(pid,region,x.i.symbol,x.i.instrument_id||x.i.symbol,x.i.asset_class,x.qty,x.entry,x.entry,x.stop,x.target,now(),snapshot.observed_at,snapshot.source,runId,x.s.reason).run();
-  opened++;decisions.push({symbol:x.i.symbol,action:"PAPER_BUY",asset_class:x.i.asset_class,quantity:x.qty,entry:Number(x.entry.toFixed(4)),stop:Number(x.stop.toFixed(4)),target:Number(x.target.toFixed(4)),reason:x.s.reason});
+  const pid=id();await env.DB.prepare("INSERT INTO bot_positions (id,region,symbol,instrument_id,asset_class,side,option_type,strike,expiry,quantity,lot_size,entry_price,last_price,stop_price,target_price,status,opened_at,last_observed_at,source,run_id,thesis,exit_reason,realized_pnl) VALUES (?,?,?,?,?,'LONG',NULL,NULL,?,?,?,?,?,?,?,'OPEN',?,?,?,?,?,NULL,0)")
+   .bind(pid,region,x.i.symbol,x.i.instrument_id||x.i.symbol,x.i.asset_class,x.i.asset_class==="FUTURE"?x.i.expiry:null,x.qty,x.lotSize,x.entry,x.entry,x.stop,x.target,now(),snapshot.observed_at,snapshot.source,runId,x.s.reason).run();
+  opened++;decisions.push({symbol:x.i.symbol,action:"PAPER_BUY",asset_class:x.i.asset_class,quantity:x.qty,lot_size:x.lotSize,entry:Number(x.entry.toFixed(4)),stop:Number(x.stop.toFixed(4)),target:Number(x.target.toFixed(4)),reason:x.s.reason});
  }
  const signals=new Map(snapshot.instruments.map(i=>[i.symbol,trend(i)])),optionPicks=[];
  for(const o of snapshot.option_contracts||[]){
@@ -84,7 +86,7 @@ async function run(snapshot,env,trigger="manual"){
   optionOpened++;decisions.push({symbol:o.symbol,action:"PAPER_BUY",asset_class:"OPTION",option_type:o.option_type,strike:o.strike,expiry:o.expiry,quantity:1,lot_size:lot,entry:Number(entry.toFixed(4)),stop:Number(stop.toFixed(4)),target:Number(target.toFixed(4)),reason:s.reason+" Contract passed spread, liquidity, expiry and delta filters."});
  }
  opened+=optionOpened;
- const report={run_id:runId,region,currency:region==="INDIA"?"INR":"USD",trigger,source:snapshot.source,data_mode:snapshot.data_mode,observed_at:snapshot.observed_at,started_at:started,completed_at:now(),scanned:snapshot.instruments.length,option_contracts_seen:(snapshot.option_contracts||[]).length,opened,closed,realized_this_run:Number(realized.toFixed(2)),unrealized_estimate:Number(unrealized.toFixed(2)),decisions,notes:["Experimental rule-based paper simulation; not a validated strategy or investment advice.","No broker orders are sent. Long-only equity/ETF and long-premium option positions only.","Equity uses ask for entry and bid for mark/exit; fees, taxes, market impact and corporate actions are excluded.","No fresh quote means no new trade and no fabricated mark."]};
+ const report={run_id:runId,region,currency:region==="INDIA"?"INR":"USD",trigger,source:snapshot.source,data_mode:snapshot.data_mode,observed_at:snapshot.observed_at,started_at:started,completed_at:now(),scanned:snapshot.instruments.length,option_contracts_seen:(snapshot.option_contracts||[]).length,opened,closed,realized_this_run:Number(realized.toFixed(2)),unrealized_estimate:Number(unrealized.toFixed(2)),decisions,notes:["Experimental rule-based paper simulation; not a validated strategy or investment advice.","No broker orders are sent. Long-only equity/ETF/futures and long-premium option positions only.","Equity uses ask for entry and bid for mark/exit; fees, taxes, market impact and corporate actions are excluded.","No fresh quote means no new trade and no fabricated mark."]};
  await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(runId,region,trigger,snapshot.source,snapshot.data_mode,snapshot.observed_at,started,report.completed_at,"completed",report.scanned,opened,closed,report.realized_this_run,JSON.stringify(report)).run();
  return report;
 }
