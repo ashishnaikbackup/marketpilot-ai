@@ -4,9 +4,9 @@
 
 **Live dashboard:** https://ashishnaikbackup.github.io/marketpilot-ai/ (static frontend; market data and backend services are not connected).
 
-MarketPilot AI is a research-first financial intelligence platform. Its first product focus is Indian index derivatives: **NIFTY 50, BANKNIFTY and FINNIFTY**, with options-chain analytics, volatility context, scenario analysis, risk calculations, paper trading and scheduled research reports.
+MarketPilot AI is an integrated financial intelligence platform combining MarketPilot's active-market research and F&O tools with FinPilot-style wealth planning, portfolio analytics and long-term investment research. Its first product focus is Indian index derivatives: **NIFTY 50, BANKNIFTY and FINNIFTY**, with options-chain analytics, volatility context, scenario analysis, risk calculations, paper trading and scheduled research reports.
 
-> **Current status:** Functional research-first MVP foundation. The dashboard includes India F&O tools, a guarded scanner, strategy payoff lab, browser-local paper journal, report builder, learning path and global watchlist. No live exchange feed, broker connection, AI-generated signal or real-money execution is enabled.
+> **Current status:** Functional research-first MVP foundation. The dashboard includes India F&O tools, a guarded scanner, strategy payoff lab, browser-local paper journal, report builder, global watchlist, integrated investment hub (portfolio/P&L, asset comparisons, SIP/lump-sum/goal calculators, research journal, market-session guide) and an interactive learning academy. The Investment Hub also supports CSV-based historical price analysis (return, CAGR, annualised volatility, drawdown, RSI and moving averages). No live exchange feed, broker connection, AI-generated signal or real-money execution is enabled.
 
 ## Product principles
 
@@ -72,7 +72,7 @@ The static frontend can be built and hosted independently. The current Greeks ca
 - `POST /api/v1/backtest/sma-crossover` runs a simple long-only SMA research simulation on caller-supplied closes, with fee/slippage assumptions and drawdown. The dashboard includes a Backtest Lab that calls this endpoint after the user enters a deployed API URL. It is an educational baseline, not a validated strategy.
 - `POST /api/v1/ai/explain` optionally calls OpenAI or Anthropic using server-side secrets. It requires a separate `MARKETPILOT_API_KEY` request header and explains only supplied context; it is not a quote, signal or recommendation.
 
-## First implemented API
+## Investment and wealth workspace\n\nThe integrated Investment Hub adds manual holdings and unrealised P&L with user-entered prices/FX, asset comparison from explicit assumptions, SIP/lump-sum/goal calculators, research journaling, India market-session education and a CSV historical data lab for stocks, ETFs, gold, funds and global assets. The Academy has self-paced modules and knowledge checks with browser-local progress. These tools are calculation/education layers, not live market feeds or personalised recommendations.\n\n## First implemented API
 
 The React dashboard now includes an India F&O workbench (with a modelled Greeks calculator), a research readiness scanner, and a browser-local paper journal. The backend exposes provider-neutral quote/option-chain contracts but intentionally ships with no connected provider. The options expiry-payoff endpoint accepts multiple call/put legs and returns a spot-versus-gross-expiry-P&L curve. The Greeks endpoint calculates European Black-Scholes theoretical price, delta, gamma, annual theta and vega from user-supplied assumptions. A bounded bisection solver estimates model-implied volatility from a user-supplied option premium. A separate research gate rejects demo, stale, incomplete or unprovenanced data with NO_TRADE. These calculations do not include exchange quotes, fees, slippage, margin or a trade recommendation. See the OpenAPI docs, [model notes](docs/OPTIONS_MODELS.md), and [provider contract](docs/MARKET_DATA_PROVIDER.md) for details.
 
