@@ -328,3 +328,25 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .cepe-market-grid dl>div{display:flex;justify-content:space-between;gap:8px;font-size:9px}
 .cepe-market-grid dt{color:#849087}.cepe-market-grid dd{margin:0;color:#35483a;font-weight:700}
 @media(max-width:600px){.cepe-market-grid{grid-template-columns:1fr}.cepe-market-compare{padding:11px}}
+
+
+/* Autonomous paper analyst */
+.paper-bot .panel-title h3{display:flex;align-items:center;gap:8px}
+.bot-import-row{display:grid;grid-template-columns:auto minmax(180px,1fr) minmax(180px,1fr);gap:12px;align-items:end}
+.bot-import-row label,.paper-bot .calculator-fields label{display:grid;gap:7px;color:#a8b4ca;font-size:10px}
+.bot-import-row input,.paper-bot .calculator-fields input{width:100%;height:36px;border:1px solid #2b3851;border-radius:7px;background:#101a2c;color:#e9edf7;padding:0 10px;font-size:11px}
+.bot-file{position:relative;display:inline-flex!important;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 13px;border:1px solid #39496a;border-radius:7px;background:#18243a;color:#bdc8e2!important;font-weight:700;cursor:pointer;white-space:nowrap}
+.bot-file input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.bot-freshness{display:grid;gap:5px;padding:9px 11px;border:1px solid #273550;border-radius:8px;background:#111b2d}
+.bot-freshness span,.bot-freshness small{font-size:9px;color:#8190aa}
+.bot-freshness strong{font-size:10px;color:#e4eaf6}
+.bot-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+.bot-actions .primary-button,.bot-actions .outline-button{display:inline-flex;align-items:center;gap:7px}
+.bot-status{margin:12px 0 0;padding:10px 12px;border:1px solid #2a3a57;border-radius:7px;background:#111b2d;color:#b6c5df;font-size:10px;line-height:1.5}
+.bot-report .panel-title{align-items:center}
+.bot-report h4{margin:17px 0 8px;color:#cbd5e8;font-size:11px}
+.bot-log{margin:5px 0;padding:8px 10px;border-left:2px solid #6c8cff;background:#121e32;color:#c5d0e5;font-size:10px;line-height:1.5}
+.bot-log.muted-copy{border-left-color:#77839b;color:#9aa8c1}
+.danger-button{border-color:#553c48!important;color:#e7a7ae!important}
+@media(max-width:850px){.bot-import-row{grid-template-columns:1fr 1fr}.bot-freshness{grid-column:1/-1}}
+@media(max-width:560px){.bot-import-row{grid-template-columns:1fr}.bot-actions>*{width:100%;justify-content:center}.bot-report .panel-title{align-items:flex-start;flex-direction:column}}
