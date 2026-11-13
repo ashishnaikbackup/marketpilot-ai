@@ -1,4 +1,4 @@
-from fastapi.testclient import TestClient
+import pytest\n\nfrom fastapi.testclient import TestClient
 
 from app.main import app
 
@@ -72,3 +72,36 @@ def test_greeks_endpoint_returns_modelled_assumptions() -> None:
     assert body["data_mode"] == "modelled_assumptions"
     assert body["gamma"] > 0
     assert "not a market quote" in body["disclaimer"]
+
+
+def test_implied_volatility_endpoint_returns_modelled_iv() -> None:
+    response = client.post(
+        "/api/v1/options/implied-volatility",
+        json={
+            "side": "call",
+            "spot": 100,
+            "strike": 100,
+            "years_to_expiry": 1,
+            "risk_free_rate": 0.05,
+            "option_price": 10.450583572,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["implied_volatility"] == pytest.approx(0.2, abs=1e-5)
+    assert body["data_mode"] == "modelled_from_user_supplied_option_price"
+
+
+def test_implied_volatility_endpoint_rejects_unrealistic_price() -> None:
+    response = client.post(
+        "/api/v1/options/implied-volatility",
+        json={
+            "side": "call",
+            "spot": 100,
+            "strike": 100,
+            "years_to_expiry": 1,
+            "risk_free_rate": 0.05,
+            "option_price": 500,
+        },
+    )
+    assert response.status_code == 422
