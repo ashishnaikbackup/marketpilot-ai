@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { AlertTriangle, Search, ShieldCheck } from "lucide-react";
 
-const API = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 type ScreenResult = { decision: string; reasons: string[]; missing_fields: string[]; message: string; data_mode: string };
 
 export default function OpportunityScanner() {
@@ -9,14 +8,23 @@ export default function OpportunityScanner() {
   const [result, setResult] = useState<ScreenResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  async function runGate() {
+  function runGate() {
     setLoading(true); setError("");
-    try {
-      const response = await fetch(`${API}/research/screen`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ instrument, data_mode: "demo", available_fields: [], strategy_rules_validated: false }) });
-      if (!response.ok) throw new Error(`Research API returned ${response.status}. Start the backend and retry.`);
-      setResult(await response.json());
-    } catch (e) { setError(e instanceof Error ? e.message : "Unable to reach research API."); }
-    finally { setLoading(false); }
+    // Static-site safe fallback: no live provider is configured in this build.
+    setResult({
+      decision: "NO_TRADE",
+      data_mode: "demo",
+      missing_fields: ["underlying_price", "option_chain", "open_interest", "implied_volatility"],
+      reasons: [
+        "Demo data cannot generate a market opportunity.",
+        "Market-data source and exchange are not identified.",
+        "Observation timestamp is missing.",
+        "Required market fields are unavailable.",
+        "No validated strategy rules are enabled."
+      ],
+      message: "The local readiness gate is intentionally fail-closed. Connect an authorised feed and run the backend research gate before analysing live opportunities."
+    });
+    setLoading(false);
   }
   return <div className="page-stack">
     <div className="notice"><ShieldCheck size={17}/><div><strong>Evidence before opinions</strong><span>The scanner cannot issue a trade idea from illustrative data. It must be able to return NO TRADE.</span></div><span className="notice-tag">GUARDED</span></div>
