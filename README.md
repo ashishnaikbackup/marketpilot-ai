@@ -4,7 +4,7 @@
 
 MarketPilot AI is a research-first financial intelligence platform. Its first product focus is Indian index derivatives: **NIFTY 50, BANKNIFTY and FINNIFTY**, with options-chain analytics, volatility context, scenario analysis, risk calculations, paper trading and scheduled research reports.
 
-> **Current status:** Foundation scaffold. The dashboard currently uses clearly labelled demo data. No live exchange feed, broker connection, AI-generated signal or real-money execution is enabled yet.
+> **Current status:** Functional research-first MVP foundation. The dashboard includes India F&O tools, a guarded scanner, strategy payoff lab, browser-local paper journal, report builder, learning path and global watchlist. No live exchange feed, broker connection, AI-generated signal or real-money execution is enabled.
 
 ## Product principles
 
@@ -60,7 +60,7 @@ npm install
 npm run dev
 ```
 
-The frontend reads `VITE_API_BASE_URL` (default `http://localhost:8000/api/v1`). Until a licensed/approved market data adapter is configured, sample values are labelled DEMO.
+The static frontend can be built and hosted independently. The current Greeks calculator, paper journal, report builder and watchlists work in the browser. Backend APIs can be run locally for API testing. No market data provider is configured; any sample overview values are labelled DEMO.
 
 ## First implemented API
 
