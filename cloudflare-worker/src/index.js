@@ -1,3 +1,4 @@
+import { paperBotRoute, scheduledPaperBot } from "./paper-bot.js";
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
@@ -37,6 +38,7 @@ function sma(values, window) {
 async function route(request, env) {
   const url=new URL(request.url), path=url.pathname;
   if(request.method==="OPTIONS") return new Response(null,{status:204,headers:cors});
+  const paperBotResponse=await paperBotRoute(request,env,url);if(paperBotResponse)return paperBotResponse;
   if(request.method==="GET" && (path==="/" || path==="/api/v1/health")) return json({status:"ok",service:"marketpilot-cloudflare-api",runtime:"cloudflare-workers",data_mode:"calculations_only",ai_binding_configured:Boolean(env?.AI?.run),ai_chat_enabled:env?.AI_CHAT_ENABLED==="true"});
   if(request.method==="GET" && path==="/api/v1/ai/status") { const enabled=env?.AI_CHAT_ENABLED==="true"; const configured=Boolean(env?.AI?.run); return json({available:enabled&&configured,enabled,provider:"cloudflare_workers_ai",model:"@cf/google/gemma-4-26b-a4b-it",mode:!enabled?"disabled_by_default":configured?"configured":"not_configured",disclaimer:"AI chat is disabled by default until rate limiting and abuse controls are configured. Binding availability does not guarantee inference capacity or free daily quota."}); }
   if(request.method==="GET" && path==="/api/v1/market-data/status") return json({provider_connected:false,provider:null,data_mode:"unavailable",instruments:[],message:"No licensed market-data provider is connected. Live analytics remain disabled."});
