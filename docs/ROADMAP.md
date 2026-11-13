@@ -84,6 +84,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 ### Milestone 9 — Production readiness
 - [ ] Authentication, authorization and account isolation
 - [ ] Secrets management, rate limiting and audit trails
+- [x] Docker backend image and Render Blueprint deployment definition (service provisioning remains external)
 - [ ] Monitoring, backups, disaster recovery and security review
 - [ ] Data-provider licensing and legal review
 - [x] Static frontend deployed to GitHub Pages; [ ] backend deployment and operational runbooks
