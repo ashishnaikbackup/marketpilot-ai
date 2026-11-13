@@ -16,7 +16,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [x] Conservative freshness/provenance/required-field gate with NO_TRADE fallback
 - [x] Provider-neutral quote and option-chain adapter contracts (no provider connected yet)
 - [x] Normalized provenance fields for provider, exchange, instrument and timestamps (adapter enforcement remains)
-- [ ] Market calendar and instrument master with expiry/lot-size versioning
+- [x] Bootstrap instrument catalogue with deliberately unverified lot-size/expiry fields; [ ] authoritative calendar and dated contract master
 - [ ] Historical data storage and replay
 - [ ] Provider terms, entitlement and redistribution review
 
@@ -25,6 +25,8 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Index/sector overview, breadth, movers and watchlists
 - [ ] Technical indicators with transparent calculation settings
 - [ ] News and official-event calendar with source links
+
+- [x] Descriptive option-chain PCR/OI/change-in-OI/volume analytics API for supplied validated rows (not connected to a provider)
 
 ### Milestone 3 — F&O workbench (highest product priority)
 - [ ] Live option-chain table with strike, CE/PE LTP, volume, OI and change in OI (UI empty state is ready)
@@ -36,12 +38,18 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Historical volatility and IV context
 - [ ] Explicit stale/missing-data states
 
+- [x] Transparent long-only SMA crossover research backtest API with fee/slippage assumptions and drawdown; [ ] robust multi-strategy walk-forward engine
+- [x] Candidate review gate with evidence, invalidation, risk notes, freshness and versioned rule ID; returns human-review eligibility only
+
 ### Milestone 4 — Research engine
 - [ ] Rules-based, testable market feature calculations
 - [x] Structured bull/base/bear, invalidation and risk fields in manual research brief; [ ] validated data-driven scenarios
 - [ ] Candidate ranking with explainable evidence, never a guaranteed signal
 - [x] NO TRADE state and minimum data-quality gates (starter readiness gate only)
 - [ ] Backtesting with costs, slippage, survivorship and look-ahead controls
+
+- [x] Provider-neutral request surface with optional server-side OpenAI and Anthropic adapters, timeouts, no browser keys and explicit source verification status
+- [ ] Structured JSON schema validation, prompt versioning, token/cost logging and retrieval citations
 
 ### Milestone 5 — AI analyst
 - [ ] Provider-neutral LLM interface
