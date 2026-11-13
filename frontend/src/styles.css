@@ -196,3 +196,14 @@ footer{border-color:#e4ebe5;color:#8c9990}
 .copilot-checklist{padding-left:17px;margin:16px 0 12px;color:#66756b;font-size:10px;line-height:2}
 .copilot-no-trade{padding:10px;border-radius:8px;background:#fff8ed;color:#916a36;font-size:9px;font-weight:700}
 @media(max-width:900px){.copilot-layout{grid-template-columns:1fr}}
+
+
+/* India Market Lab */
+.india-csv-label{display:grid;gap:7px;margin-top:16px;color:#68786d;font-size:10px;font-weight:650}
+.india-csv-label textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:170px;padding:12px;border:1px solid #dfe7e0;border-radius:9px;background:#fbfcfb;color:#24372a;font:11px ui-monospace,SFMono-Regular,Consolas,monospace;line-height:1.6;outline:none}
+.india-csv-label textarea:focus{border-color:#25985a}
+.india-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:12px}
+.india-actions button{display:inline-flex;align-items:center;gap:7px}
+.data-table-wrap{width:100%;overflow-x:auto;margin-top:15px}
+.data-table-wrap .data-table{min-width:650px;width:100%}
+@media(max-width:600px){.india-actions{display:grid;grid-template-columns:1fr}.india-actions button{justify-content:center}.india-csv-label textarea{font-size:10px}}
