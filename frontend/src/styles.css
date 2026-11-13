@@ -71,3 +71,128 @@
 .history-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .history-stats article{padding:12px;background:#0d1728;border:1px solid #26334a;border-radius:7px}
 .history-stats article strong{font-size:15px}
+
+
+/* MarketPilot visual refresh — clean wealth-app surfaces with a professional research terminal */
+:root{font-family:Inter,'DM Sans',sans-serif;color:#18251f;background:#f5f7f5;font-synthesis:none;text-rendering:optimizeLegibility}
+body{background:#f5f7f5;color:#18251f}
+.sidebar{background:#fff;border-right:1px solid #e7ece8;box-shadow:4px 0 24px #15291a08}
+.brand strong{color:#15231c}.brand strong span{color:#16834a}
+.brand-mark{background:#e8f5ec;color:#16834a;box-shadow:none}
+.workspace-label{color:#8a978e}
+.search-box{background:#f7f9f7;border-color:#e7ece8;color:#718078}
+.search-box input{color:#24352b}.search-box input::placeholder{color:#9aa59d}
+.nav-item{color:#69776e}.nav-item:hover{background:#f2f7f3;color:#20352a}
+.nav-item.active{background:#eaf5ed;color:#147c43;font-weight:700}
+.nav-item.active svg{color:#16834a}
+.data-card{background:#f6faf7;border-color:#e2eee5}
+.data-card-top{color:#708378}.data-card strong{color:#24382c}.data-card small{color:#7b8d80}
+.profile{border-color:#edf0ed}.profile strong{color:#293b30}.profile small{color:#8a978e}
+.avatar,.top-avatar{background:#e7f3ea;color:#167b43}
+.main-area{background:#f5f7f5}
+.topbar{background:#fff;border-bottom:1px solid #e7ece8}
+.breadcrumbs{color:#89958d}.breadcrumbs b{color:#c1cbc4}.breadcrumbs strong{color:#26382d}
+.icon-button{color:#6d7b72}.top-avatar{background:#e9f4ec;color:#187b45}
+.content{max-width:1520px}
+.eyebrow{color:#16834a}
+.welcome-row h1{color:#17271d;letter-spacing:-.9px}
+.subhead{color:#718077}
+.date-button,.select-wrap{background:#fff;border-color:#e2e9e3;color:#526158}
+.notice{background:#f0f7f1;border-color:#d9e9dc;color:#26794a}
+.notice strong{color:#235c37}.notice span{color:#62766a}
+.notice .notice-tag{border-color:#c6dfcb;color:#26794a}
+.section-heading h2{color:#203329}.section-heading p,.panel-title p{color:#839087}
+.text-button{color:#16834a}
+.market-card,.panel{background:#fff;border:1px solid #e6ece7;border-radius:13px;box-shadow:0 3px 14px #1b352008}
+.market-card{padding:17px}
+.market-card-top{color:#75847a}
+.market-card>strong{color:#1b3024}
+.change span{color:#9aa59d}
+.positive{color:#15834a}.negative{color:#c5535d}
+.sparkline path{stroke:#1b9a5a}
+.market-card:nth-child(2) .sparkline path,.market-card:nth-child(4) .sparkline path{stroke:#d36a70}
+.pill.muted{background:#f1f4f1;color:#7a887e}
+.chain-icon,.empty-icon{background:#edf6ef;color:#18814a}
+.chain-placeholder strong,.empty-state strong{color:#263a2d}
+.chain-placeholder>span,.empty-state>span{color:#859188}
+.outline-button{border:1px solid #d8e7db;background:#f4faf5;color:#167c43;border-radius:8px}
+.outline-button:hover{background:#eaf5ed}
+.context-list>div{border-color:#edf1ed;color:#58675d}
+.context-foot{border-color:#edf1ed;color:#77857b}
+.muted-icon{color:#87948b}
+.report-row{border-color:#edf1ed}
+.report-icon{background:#edf6ef;color:#16834a}
+.report-row strong{color:#2c3c31}.report-row span{color:#849188}
+footer{border-color:#e4ebe5;color:#8c9990}
+.calculator-fields label,.workbench-controls label,.scanner-form label{color:#68786d}
+.calculator-fields input,.calculator-fields select,.workbench-controls select,.scanner-form select{background:#fbfcfb;border-color:#dfe7e0;color:#24372a}
+.calculator-fields input:focus,.calculator-fields select:focus{border-color:#25985a}
+.calculator-result>div,.greeks-result>div,.portfolio-stats article,.framework-grid article{background:#f8faf8;border-color:#e6ece7}
+.calculator-result span,.greeks-result span,.portfolio-stats span{color:#7b897f}
+.calculator-result strong,.greeks-result strong,.portfolio-stats strong{color:#24372a}
+.calculator-warning{background:#fff8ed;border-color:#f0dfc3;color:#94652a}
+.calculator-warning span{color:#806c4e}
+.primary-button{background:#16834a;border-color:#16834a;color:#fff;border-radius:8px;box-shadow:0 3px 8px #16834a22}
+.primary-button:hover{background:#116e3d}
+.data-table th,.hub-table th{color:#849188;border-color:#e7ede8}
+.data-table td,.hub-table td{color:#536359;border-color:#edf1ed}
+.data-table td strong{color:#283b2e}
+.data-table td small{color:#87948b}
+.workbench-controls select:disabled{background:#f4f6f4}
+.decision-card{background:#fff9ef;border-color:#f0dfc3}
+.decision-title{color:#9a6b2f}
+.decision-card p,.decision-card li{color:#76664e}
+.decision-card h4{color:#5f4c31}
+.framework-grid strong{color:#2c3d31}.framework-grid span{color:#7b897f}
+.hub-tabs button{background:#fff;border-color:#e2e9e3;color:#627168}
+.hub-tabs button.selected{background:#eaf5ed;border-color:#b9d9c1;color:#167c43}
+.hub-fields label{color:#69786e}
+.hub-fields input,.hub-fields select,.hub-fields textarea{background:#fbfcfb;border-color:#dfe7e0;color:#24372a}
+.hub-fields input:focus,.hub-fields select:focus,.hub-fields textarea:focus{border-color:#25985a}
+.coming-soon{color:#24372a}
+.coming-soon h3{color:#24372a}
+.coming-soon p{color:#7b897f}
+.iv-solver{background:#f8faf8;border-color:#e4ebe5}
+.iv-solver>div strong{color:#263a2d}.iv-solver>div span{color:#7c8a80}
+.iv-solver label{color:#68786d}.iv-solver input{background:#fff;border-color:#dfe7e0;color:#24372a}
+.iv-result{color:#16834a}
+.strategy-leg,.strategy-chart{background:#f8faf8;border-color:#e4ebe5}
+.strategy-leg label{color:#748278}
+.strategy-leg input,.strategy-leg select{background:#fff;border-color:#dfe7e0;color:#24372a}
+.chart-title{color:#304236}.chart-title span,.chart-axis{color:#7e8b82}
+.hub-footnote{color:#839087}
+@media(max-width:760px){.sidebar{box-shadow:20px 0 50px #15291a18}.topbar{background:#fff}.content{padding-top:22px}}
+/* Research copilot */
+.copilot-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.85fr);gap:14px;align-items:start}
+.copilot-main{padding:0;overflow:hidden}
+.copilot-head{display:flex;align-items:center;gap:12px;padding:17px 19px;border-bottom:1px solid #edf1ed}
+.copilot-avatar{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#eaf5ed;color:#16834a}
+.copilot-head h3{font:700 14px Manrope,sans-serif;margin:0;color:#203329}
+.copilot-head p{font-size:10px;color:#829087;margin:4px 0 0}
+.copilot-status{margin-left:auto;font-size:8px;letter-spacing:.8px;font-weight:800;color:#16834a;background:#edf7ef;border-radius:20px;padding:6px 9px}
+.copilot-safety{display:flex;align-items:flex-start;gap:9px;margin:14px 17px 4px;padding:11px 12px;border-radius:9px;background:#fff8ed;border:1px solid #f1e2c8;color:#946c36;font-size:9px;line-height:1.55}
+.copilot-safety svg{flex:none}
+.copilot-messages{padding:14px 17px;min-height:350px;max-height:560px;overflow:auto;display:grid;align-content:start;gap:13px}
+.chat-message{display:flex;gap:9px;max-width:95%}
+.user-message{justify-self:end;max-width:85%}
+.message-icon{width:26px;height:26px;flex:none;border-radius:8px;background:#edf6ef;color:#16834a;display:grid;place-items:center}
+.message-body{padding:11px 13px;border:1px solid #e8eee9;border-radius:4px 11px 11px 11px;background:#fbfcfb}
+.user-message .message-body{background:#eaf5ed;border-color:#d9eadc;border-radius:11px 4px 11px 11px}
+.message-body strong{display:block;color:#26392d;font-size:10px;margin-bottom:7px}
+.message-body p{white-space:pre-line;margin:0;color:#58685d;font-size:10px;line-height:1.7}
+.user-message .message-body p{color:#2e4b38}
+.copilot-input{display:flex;gap:9px;padding:13px 15px;border-top:1px solid #edf1ed;background:#fff}
+.copilot-input input{height:42px;flex:1;min-width:0;border:1px solid #dfe8e1;background:#fbfcfb;border-radius:9px;padding:0 13px;color:#24372a;font:11px Inter,sans-serif;outline:none}
+.copilot-input input:focus{border-color:#239455}
+.copilot-input button{width:42px;height:42px;border:0;border-radius:9px;background:#16834a;color:white;display:grid;place-items:center}
+.copilot-input button:disabled{opacity:.45;cursor:not-allowed}
+.copilot-footnote{padding:0 16px 13px;color:#8a978e;font-size:8px}
+.copilot-side{display:grid;gap:14px}
+.copilot-starters{display:grid;gap:7px;margin-top:15px}
+.copilot-starters button{display:flex;align-items:center;gap:10px;text-align:left;padding:11px;border:1px solid #e8eee9;background:#fbfcfb;border-radius:9px;color:#4f6155;font-size:10px}
+.copilot-starters button:hover{border-color:#bcdcc5;background:#f3faf4}
+.copilot-starters button svg{color:#16834a}
+.starter-arrow{margin-left:auto;color:#91a097}
+.copilot-checklist{padding-left:17px;margin:16px 0 12px;color:#66756b;font-size:10px;line-height:2}
+.copilot-no-trade{padding:10px;border-radius:8px;background:#fff8ed;color:#916a36;font-size:9px;font-weight:700}
+@media(max-width:900px){.copilot-layout{grid-template-columns:1fr}}
