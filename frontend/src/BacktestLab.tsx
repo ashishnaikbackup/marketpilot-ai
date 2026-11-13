@@ -21,14 +21,14 @@ export default function BacktestLab() {
 
   async function run() {
     setError(""); setResult(null);
-    const values = prices.split(/[\\s,;]+/).filter(Boolean).map(Number);
+    const values = prices.split(/[\s,;]+/).filter(Boolean).map(Number);
     if (values.some(v => !Number.isFinite(v) || v <= 0) || values.length < 22) {
       setError("Enter at least 22 positive closing prices, separated by commas or spaces."); return;
     }
     if (!apiUrl.trim()) { setError("Enter your deployed MarketPilot API base URL first. The GitHub Pages site does not host the backend."); return; }
     setLoading(true);
     try {
-      const response = await fetch(apiUrl.replace(/\\/$/, "") + "/api/v1/backtest/sma-crossover", {
+      const response = await fetch(apiUrl.replace(/\/$/, "") + "/api/v1/backtest/sma-crossover", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ closes: values, fast_window: Number(fast), slow_window: Number(slow), fee_bps: Number(fee), slippage_bps: Number(slippage) }),
       });
