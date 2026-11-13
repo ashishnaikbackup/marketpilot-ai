@@ -73,9 +73,21 @@ async function route(request) {
     }
     if(path==="/api/v1/analytics/option-chain"){
       if(!Array.isArray(p.rows)||!p.rows.length||p.rows.length>5000) throw Error("Provide 1 to 5000 option-chain rows.");
-      let callOI=0,putOI=0,callVol=0,putVol=0;
-      for(const r of p.rows){if(!finite(r.strike)||r.strike<=0||!Number.isInteger(r.open_interest)||r.open_interest<0||!Number.isInteger(r.volume)||r.volume<0) throw Error("Invalid option-chain row.");if(r.option_type==="CE"||r.option_type==="call"){callOI+=r.open_interest;callVol+=r.volume;}else if(r.option_type==="PE"||r.option_type==="put"){putOI+=r.open_interest;putVol+=r.volume;}else throw Error("option_type must be CE or PE.");}
-      return json({call_open_interest:callOI,put_open_interest:putOI,pcr_oi:callOI?putOI/callOI:null,call_volume:callVol,put_volume:putVol,pcr_volume:callVol?putVol/callVol:null,rows:p.rows.length,data_mode:"caller_supplied_unverified",disclaimer:"Descriptive calculations only. The caller must verify source, exchange, timestamp and contract mapping."});
+      let callOI=0,putOI=0,callVol=0,putVol=0,callChange=0,putChange=0;
+      const strikes=[...new Set(p.rows.map(r=>r.strike))].sort((a,b)=>a-b);
+      const oiByStrike={};
+      for(const r of p.rows){
+        if(!finite(r.strike)||r.strike<=0||!Number.isInteger(r.open_interest)||r.open_interest<0||!Number.isInteger(r.volume)||r.volume<0) throw Error("Invalid option-chain row.");
+        if(r.change_oi!==undefined&&(!Number.isInteger(r.change_oi))) throw Error("change_oi must be an integer when supplied.");
+        const isCall=r.option_type==="CE"||r.option_type==="call",isPut=r.option_type==="PE"||r.option_type==="put";
+        if(!isCall&&!isPut) throw Error("option_type must be CE or PE.");
+        if(isCall){callOI+=r.open_interest;callVol+=r.volume;callChange+=r.change_oi||0;}else{putOI+=r.open_interest;putVol+=r.volume;putChange+=r.change_oi||0;}
+        oiByStrike[r.strike]??={call:0,put:0};oiByStrike[r.strike][isCall?"call":"put"]+=r.open_interest;
+      }
+      const maxPain=strikes.map(candidate=>({strike:candidate,payout:p.rows.reduce((total,r)=>total+(r.option_type==="CE"||r.option_type==="call"?Math.max(candidate-r.strike,0):Math.max(r.strike-candidate,0))*r.open_interest,0)})).sort((a,b)=>a.payout-b.payout)[0]?.strike??null;
+      const topCall=Object.entries(oiByStrike).sort((a,b)=>b[1].call-a[1].call)[0]?.[0]??null;
+      const topPut=Object.entries(oiByStrike).sort((a,b)=>b[1].put-a[1].put)[0]?.[0]??null;
+      return json({call_open_interest:callOI,put_open_interest:putOI,pcr_oi:callOI?putOI/callOI:null,call_volume:callVol,put_volume:putVol,pcr_volume:callVol?putVol/callVol:null,call_change_oi:callChange,put_change_oi:putChange,pcr_change_oi:callChange?putChange/callChange:null,max_pain_strike:maxPain,highest_call_oi_strike:Number(topCall),highest_put_oi_strike:Number(topPut),strike_count:strikes.length,rows:p.rows.length,data_mode:"caller_supplied_unverified",disclaimer:"Descriptive calculations only. The caller must verify source, exchange, timestamp and contract mapping. Max pain is not a prediction or trading signal."});
     }
     if(path==="/api/v1/research/candidate"){
       const reasons=[];if(p.data_mode==="demo"||p.data_mode==="historical"||p.data_mode==="unavailable"||p.data_mode==="eod")reasons.push("Data mode is not suitable for an intraday candidate.");
