@@ -54,3 +54,25 @@ test("option-chain analytics returns PCR, max pain and OI concentration", async 
   assert.equal(result.highest_put_oi_strike, 100);
   assert.equal(result.data_mode, "caller_supplied_unverified");
 });
+
+test("AI chat fails safely when Workers AI binding is not configured", async () => {
+  const response = await call("/api/v1/ai/chat", {messages:[{role:"user",content:"Explain PCR"}]});
+  assert.equal(response.status,503);
+  assert.match((await response.json()).detail,/AI binding is not configured/);
+});
+
+test("AI chat uses the server-side research guardrails and returns model output", async () => {
+  const request = new Request("https://unit.test/api/v1/ai/chat", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({messages:[{role:"user",content:"Explain the imported option-chain context."}],context:"NIFTY PCR 1.05; source user supplied."})
+  });
+  let modelName = "";
+  let sentMessages = [];
+  const response = await app.fetch(request, {AI:{run:async(model,payload)=>{modelName=model;sentMessages=payload.messages;return {response:"PCR is descriptive, not a standalone signal."};}}});
+  const result=await response.json();
+  assert.equal(response.status,200);
+  assert.equal(modelName,"@cf/google/gemma-4-26b-a4b-it");
+  assert.match(sentMessages[0].content,/NO TRADE/);
+  assert.match(sentMessages[1].content,/user-supplied context/);
+  assert.match(result.answer,/descriptive/);
+});
