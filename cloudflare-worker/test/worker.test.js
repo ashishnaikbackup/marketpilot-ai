@@ -6,6 +6,13 @@ const call = (path, payload) => app.fetch(new Request("https://unit.test"+path, 
   method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
 }));
 
+test("scheduled paper trader handler is exported for Cron Triggers", async () => {
+  assert.equal(typeof app.scheduled, "function");
+  let scheduledPromise;
+  app.scheduled({scheduledTime:Date.now()}, {}, {waitUntil(p){scheduledPromise=p;}});
+  await scheduledPromise;
+});
+
 test("health endpoint reports a healthy calculation-only API", async () => {
   const response = await app.fetch(new Request("https://unit.test/api/v1/health"));
   assert.equal(response.status, 200);
