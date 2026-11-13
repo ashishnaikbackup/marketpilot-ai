@@ -259,3 +259,5 @@ footer{border-color:#e4ebe5;color:#8c9990}
 .spend-row strong{text-align:right;color:#35473a;font-size:10px}
 .money-manager .empty-state{padding:17px 8px;color:#89958d;font-size:10px}
 @media(max-width:760px){.money-grid{grid-template-columns:1fr}.spend-row{grid-template-columns:80px 1fr 75px}.money-toolbar>*{flex:1}}
+
+.overview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
