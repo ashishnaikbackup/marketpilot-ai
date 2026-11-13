@@ -103,3 +103,27 @@ test("AI status reports whether the Workers AI binding is configured", async () 
   assert.equal(result.enabled, true);
   assert.equal(result.mode, "configured");
 });
+
+
+test("paper bot status is explicit about missing provider and D1 setup", async () => {
+  const response = await app.fetch(new Request("https://unit.test/api/v1/paper-bot/status"));
+  const result = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(result.mode, "paper_only");
+  assert.equal(result.configured, false);
+  assert.equal(result.feed_configured, false);
+});
+
+test("paper bot positions fail safely when D1 is not configured", async () => {
+  const response = await app.fetch(new Request("https://unit.test/api/v1/paper-bot/positions"));
+  assert.equal(response.status, 503);
+});
+
+test("manual paper bot run cannot execute without D1", async () => {
+  const request = new Request("https://unit.test/api/v1/paper-bot/run", {
+    method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer test"},
+    body:JSON.stringify({snapshot:{}})
+  });
+  const response = await app.fetch(request, {BOT_RUN_TOKEN:"test"});
+  assert.equal(response.status, 503);
+});
