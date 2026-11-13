@@ -11,6 +11,9 @@ export default function FOWorkbench() {
   const [days, setDays] = useState("7");
   const [rate, setRate] = useState("0.06");
   const [vol, setVol] = useState("0.18");
+  const [marketPremium, setMarketPremium] = useState("250");
+  const [ivResult, setIvResult] = useState<number | null>(null);
+  const [ivError, setIvError] = useState("");
   const [result, setResult] = useState<Greeks | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,6 +37,19 @@ export default function FOWorkbench() {
     finally { setLoading(false); }
   }
 
+  function solveImpliedVolatility() {
+    setIvError(""); setIvResult(null);
+    const s=Number(spot), k=Number(strike), t=Number(days)/365, r=Number(rate), premium=Number(marketPremium);
+    if (![s,k,t,r,premium].every(Number.isFinite) || s<=0 || k<=0 || t<=0 || premium<=0) { setIvError("Enter valid positive spot, strike, days and option premium."); return; }
+    const erf=(x:number)=>{const sign=x<0?-1:1;const a=Math.abs(x);const p=0.3275911;const z=1/(1+p*a);const y=1-(((((1.061405429*z-1.453152027)*z)+1.421413741)*z-0.284496736)*z+0.254829592)*z*Math.exp(-a*a);return sign*y;};
+    const cdf=(x:number)=>0.5*(1+erf(x/Math.SQRT2));
+    const price=(v:number)=>{const root=Math.sqrt(t),d1=(Math.log(s/k)+(r+0.5*v*v)*t)/(v*root),d2=d1-v*root,disc=Math.exp(-r*t);return side==="call"?s*cdf(d1)-k*disc*cdf(d2):k*disc*cdf(-d2)-s*cdf(-d1)};
+    let low=0.000001,high=5;
+    if(premium<price(low)-0.000001||premium>price(high)+0.000001){setIvError("Premium is outside the supported model price range.");return;}
+    for(let i=0;i<100;i++){const mid=(low+high)/2,model=price(mid);if(Math.abs(model-premium)<0.0000001){setIvResult(mid);return;}if(model<premium)low=mid;else high=mid;}
+    setIvResult((low+high)/2);
+  }
+
   return <div className="page-stack">
     <div className="notice"><ShieldCheck size={17}/><div><strong>Market data provider not connected</strong><span>Live option chain, LTP, OI, volume, IV and exchange Greeks are intentionally unavailable. No market values are fabricated.</span></div><span className="notice-tag">NO FEED</span></div>
     <section className="panel"><div className="panel-title"><div><h3>India index derivatives</h3><p>Choose the instrument you want to research</p></div><Activity size={18} className="muted-icon"/></div><div className="workbench-controls"><label>Underlying<select value={symbol} onChange={e=>setSymbol(e.target.value)}><option>NIFTY</option><option>BANKNIFTY</option><option>FINNIFTY</option></select></label><label>Expiry<select disabled><option>Connect market calendar first</option></select></label><label>Option type<select disabled><option>CE / PE chain unavailable</option></select></label></div><div className="empty-state"><div className="empty-icon"><Database size={21}/></div><strong>{symbol} option chain is not connected</strong><span>Once an authorised feed is configured, this area will show strike, CE/PE LTP, bid/ask, volume, OI, change in OI, IV and timestamp.</span></div></section>
@@ -47,6 +63,7 @@ export default function FOWorkbench() {
     </div><button className="primary-button" onClick={calculate} disabled={loading}>{loading ? "Calculating…" : "Calculate theoretical Greeks"}</button>
     {error && <p className="error-text">{error}</p>}
     {result && <div className="greeks-result"><div><span>Theoretical price</span><strong>{result.theoretical_price.toFixed(2)}</strong></div><div><span>Delta</span><strong>{result.delta.toFixed(4)}</strong></div><div><span>Gamma</span><strong>{result.gamma.toFixed(6)}</strong></div><div><span>Theta / year</span><strong>{result.theta_per_year.toFixed(2)}</strong></div><div><span>Vega / 1 vol point</span><strong>{result.vega_per_1pct.toFixed(4)}</strong></div></div>}
-    <p className="disclaimer-small">Model output calculated in this browser, not a quote or implied volatility. Assumes European exercise and omits dividends, early exercise, jumps, liquidity and trading costs.</p></section>
+    <p className="disclaimer-small">Model output calculated in this browser, not a quote or implied volatility. Assumes European exercise and omits dividends, early exercise, jumps, liquidity and trading costs.</p>
+    <div className="iv-solver"><div><strong>Implied volatility solver</strong><span>Enter an option premium to estimate model-implied volatility</span></div><label>Option premium<input type="number" min="0.01" value={marketPremium} onChange={e=>setMarketPremium(e.target.value)}/></label><button className="outline-button" onClick={solveImpliedVolatility}>Solve IV</button>{ivError&&<p className="error-text">{ivError}</p>}{ivResult!==null&&<strong className="iv-result">{(ivResult*100).toFixed(2)}% annualised model IV</strong>}</div></section>
   </div>;
 }
