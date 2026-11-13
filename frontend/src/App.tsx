@@ -9,6 +9,7 @@ import StrategyLab from "./StrategyLab";
 import GlobalMarkets from "./GlobalMarkets";
 import BacktestLab from "./BacktestLab";
 import InvestmentHub from "./InvestmentHub";
+import MoneyManager from "./MoneyManager";
 import MarketPilotCopilot from "./MarketPilotCopilot";
 import IndiaMarketLab from "./IndiaMarketLab";
 import MoneyManager from "./MoneyManager";
