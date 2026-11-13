@@ -14,3 +14,32 @@
 
 .iv-solver{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,180px) auto;align-items:end;gap:10px;margin-top:15px;padding:13px;border:1px solid #293650;background:#0d1728;border-radius:8px}.iv-solver>div strong{display:block;font-size:10px;color:#dce4f4}.iv-solver>div span{display:block;font-size:8px;color:#7f8ea8;margin-top:4px}.iv-solver label{display:grid;gap:5px;color:#8e9db5;font-size:8px}.iv-solver input{height:32px;background:#111c2e;border:1px solid #2a3851;border-radius:5px;padding:0 8px;color:#e5ebf7;font-size:10px}.iv-solver .outline-button{margin:0;white-space:nowrap}.iv-solver .error-text{grid-column:1/-1;margin:0}.iv-result{grid-column:1/-1;font:700 14px Manrope,sans-serif;color:#61cda6}
 @media(max-width:760px){.iv-solver{grid-template-columns:1fr 1fr}.iv-solver>div{grid-column:1/-1}.iv-solver .outline-button{justify-self:start}}
+
+
+/* Integrated FinPilot wealth, portfolio and market-research workspace */
+.hub-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 16px}
+.hub-tabs button{display:flex;align-items:center;gap:7px;background:#111c2e;border:1px solid #293650;border-radius:7px;color:#9eacc2;padding:9px 11px;font-size:10px}
+.hub-tabs button.selected{background:#202e55;border-color:#5368b6;color:#d6ddff}
+.hub-fields{grid-template-columns:repeat(3,minmax(0,1fr));margin:17px 0}
+.hub-fields .span-two{grid-column:span 2}
+.hub-fields input,.hub-fields select,.hub-fields textarea{width:100%;min-width:0;border:1px solid #2a3851;background:#0d1728;color:#e5ebf7;border-radius:6px;padding:9px;font:10px 'DM Sans',sans-serif;outline:none}
+.hub-fields input,.hub-fields select{height:36px}
+.hub-fields textarea{resize:vertical;line-height:1.5}
+.hub-fields input:focus,.hub-fields select:focus,.hub-fields textarea:focus{border-color:#7588ff}
+.hub-table{border-collapse:collapse;width:100%;font-size:10px;min-width:760px;margin-top:14px}
+.hub-table th{text-align:left;color:#7e8da7;font-size:8px;letter-spacing:.7px;text-transform:uppercase;padding:10px;border-bottom:1px solid #2a3851}
+.hub-table td{padding:11px 10px;color:#aab6ca;border-bottom:1px solid #202b3e}
+.hub-table td strong,.hub-table td small{display:block}.hub-table td strong{color:#e5ebf7}.hub-table td small{font-size:8px;color:#71809a;margin-top:3px}
+.table-scroll{width:100%;overflow-x:auto}
+.hub-footnote{font-size:9px;color:#7d8ca5;line-height:1.65;margin:0 0 14px}
+.hub-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.calc-result{display:grid;gap:6px;background:#0d1728;border:1px solid #2a3851;border-radius:8px;padding:15px;margin-top:16px}
+.calc-result>span{font-size:9px;color:#8493aa}.calc-result strong{font:700 22px Manrope,sans-serif;color:#e8edff}
+.hub-bullets{padding-left:17px;color:#a5b1c6;font-size:10px;line-height:1.8}
+.hub-bullets li{padding:4px 0}
+.research-note{border-top:1px solid #26334a;padding:14px 0;display:grid;gap:7px}
+.research-note>div{display:flex;justify-content:space-between}.research-note strong{font-size:11px;color:#e4eaf6}.research-note small,.research-note span{font-size:9px;color:#8a99b0}.research-note p{font-size:10px;color:#b9c5d8;margin:0;line-height:1.6}
+.timing-list{display:grid;margin-top:13px}.timing-list article{display:grid;grid-template-columns:105px 1fr;gap:12px;padding:13px 0;border-bottom:1px solid #26334a}.timing-list article:last-child{border:0}
+.timing-list time{font:700 10px Manrope,sans-serif;color:#aebaff}.timing-list strong{display:block;color:#e2e9f6;font-size:10px}.timing-list span{display:block;color:#8291a9;font-size:9px;line-height:1.6;margin-top:4px}
+@media(max-width:760px){.hub-fields{grid-template-columns:1fr 1fr}.hub-fields .span-two{grid-column:span 2}.hub-two-col{grid-template-columns:1fr}.hub-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:5px}.hub-tabs button{white-space:nowrap}.timing-list article{grid-template-columns:90px 1fr}}
+@media(max-width:390px){.hub-fields{grid-template-columns:1fr}.hub-fields .span-two{grid-column:auto}}
