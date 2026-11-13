@@ -1,8 +1,9 @@
 """Optional server-side AI research explainer. AI is never a market-data or signal source."""
 import os
+import secrets
 from typing import Literal
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
 router = APIRouter(tags=["AI research"])
@@ -22,7 +23,12 @@ SYSTEM = ("You are MarketPilot AI's cautious financial research explainer. Expla
 
 
 @router.post("/ai/explain")
-async def explain(payload: ExplainRequest):
+async def explain(payload: ExplainRequest, x_api_key: str | None = Header(default=None)):
+    expected_key = os.getenv("MARKETPILOT_API_KEY")
+    if not expected_key:
+        raise HTTPException(503, "AI endpoint is disabled until MARKETPILOT_API_KEY is configured.")
+    if not x_api_key or not secrets.compare_digest(x_api_key, expected_key):
+        raise HTTPException(401, "A valid API key is required.")
     if payload.provider == "openai":
         key, model = os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
         if not key:
