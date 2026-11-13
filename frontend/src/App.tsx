@@ -25,7 +25,7 @@ type Tab = "Overview" | "F&O Workbench" | "Opportunity Scanner" | "Strategy Lab"
 const nav: { label: Tab; icon: typeof LayoutDashboard }[] = [
   { label: "Overview", icon: LayoutDashboard }, { label: "AI Copilot", icon: Bot }, { label: "Money Manager", icon: Wallet }, { label: "India Market Lab", icon: Activity }, { label: "F&O Workbench", icon: BarChart3 },
   { label: "Opportunity Scanner", icon: Target }, { label: "Strategy Lab", icon: SlidersHorizontal },
-  { label: "Paper Portfolio", icon: Wallet }, { label: "Paper Trading Bot", icon: Bot }, { label: "Research Reports", icon: CalendarDays },
+  { label: "Paper Portfolio", icon: Wallet }, { label: "Paper Trading Bot", icon: Bot }, { label: "Auto Paper Trader", icon: Bot }, { label: "Research Reports", icon: CalendarDays },
   { label: "Global Markets", icon: Globe2 }, { label: "Investment Hub", icon: Wallet }, { label: "Backtest Lab", icon: Activity }, { label: "Academy", icon: BookOpen },
 ];
 const marketWatchlist = ["NIFTY 50", "BANKNIFTY", "FINNIFTY", "INDIA VIX"];
