@@ -3,7 +3,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
-from app.domain.greeks import black_scholes_greeks
+from app.domain.greeks import black_scholes_greeks, implied_volatility
 from app.domain.options import OptionPosition, OptionSide, position_expiry_pnl
 
 router = APIRouter(prefix="/options", tags=["options"])
@@ -29,6 +29,15 @@ class PayoffRequest(BaseModel):
     spot_min: float = Field(ge=0)
     spot_max: float = Field(gt=0)
     steps: int = Field(default=21, ge=2, le=201)
+
+
+class ImpliedVolatilityRequest(BaseModel):
+    side: Literal["call", "put"]
+    spot: float = Field(gt=0)
+    strike: float = Field(gt=0)
+    years_to_expiry: float = Field(gt=0, le=10)
+    risk_free_rate: float = Field(ge=-0.05, le=0.30)
+    option_price: float = Field(gt=0)
 
 
 class GreeksRequest(BaseModel):
@@ -95,5 +104,31 @@ def option_greeks(payload: GreeksRequest) -> dict:
         "disclaimer": (
             "Model output from user-supplied assumptions, not a market quote or signal. "
             "European Black-Scholes omits dividends, early exercise, jumps and trading costs."
+        ),
+    }
+
+
+@router.post("/implied-volatility", summary="Solve European Black-Scholes implied volatility")
+def option_implied_volatility(payload: ImpliedVolatilityRequest) -> dict:
+    try:
+        value = implied_volatility(
+            side=OptionSide(payload.side),
+            spot=payload.spot,
+            strike=payload.strike,
+            years_to_expiry=payload.years_to_expiry,
+            risk_free_rate=payload.risk_free_rate,
+            option_price=payload.option_price,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "model": "black_scholes_european_bisection",
+        "implied_volatility": round(value, 8),
+        "implied_volatility_percent": round(value * 100, 4),
+        "inputs": payload.model_dump(),
+        "data_mode": "modelled_from_user_supplied_option_price",
+        "disclaimer": (
+            "Model-implied volatility from the price you entered, not an exchange IV quote. "
+            "European assumptions apply; market microstructure and dividends are omitted."
         ),
     }
