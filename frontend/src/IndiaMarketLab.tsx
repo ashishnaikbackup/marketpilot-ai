@@ -43,6 +43,7 @@ export default function IndiaMarketLab(){
     <label>Data source / provider<input value={source} onChange={e=>setSource(e.target.value)} placeholder="Name the source"/></label>
     <label>Observation time<input type="datetime-local" value={observedAt} onChange={e=>setObservedAt(e.target.value)}/></label>
    </div>
+   <label className="india-file-label">Choose option-chain CSV file<input type="file" accept=".csv,text/csv" onChange={e=>{const file=e.currentTarget.files?.[0];if(file){void file.text().then(setCsv).catch(()=>setError("Could not read the selected CSV file."));}}}/></label>
    <label className="india-csv-label">Option-chain CSV<textarea rows={9} value={csv} onChange={e=>setCsv(e.target.value)} placeholder="strike,option_type,open_interest,change_oi,volume,ltp,iv,bid,ask&#10;25000,CE,120000,15000,45000,185,14.2,184.5,185.5&#10;25000,PE,135000,22000,51000,172,14.8,171.5,172.5"/></label>
    <div className="india-actions"><button className="outline-button" onClick={loadDemo}><FileText size={14}/> Load illustrative sample</button><button className="primary-button" onClick={importChain}><Upload size={14}/> Analyse imported chain</button></div>
    {error&&<p className="error-text">{error}</p>}
