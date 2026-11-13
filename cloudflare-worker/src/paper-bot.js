@@ -58,8 +58,8 @@ async function run(snapshot,env,trigger="manual"){
  const signals=new Map(snapshot.instruments.map(i=>[i.symbol,trend(i)])),optionPicks=[];
  for(const o of snapshot.option_contracts||[]){
   const s=signals.get(o.underlying);if(!s||!["BULLISH","BEARISH"].includes(s.side)||!o.contract_id||!o.symbol||!fresh(o,nowMs))continue;
-  const right=s.side==="BULLISH"?"CE":"PE",expiry=Date.parse(o.expiry+"T15:30:00+05:30"),dte=(expiry-nowMs)/86400000,mid=(o.bid+o.ask)/2;
-  if(o.option_type!==right||!finite(o.strike)||!Number.isInteger(o.lot_size)||o.lot_size<1||!finite(o.delta)||Math.abs(o.delta)<.35||Math.abs(o.delta)>.65||!finite(o.iv)||o.iv<=0||o.iv>1.5||!Number.isInteger(o.open_interest)||o.open_interest<500||!Number.isInteger(o.volume)||o.volume<50||dte<7||dte>45||mid<=0||(o.ask-o.bid)/mid>.025)continue;
+  const right=region==="INDIA"?(s.side==="BULLISH"?"CE":"PE"):(s.side==="BULLISH"?"CALL":"PUT"),expiry=Date.parse(region==="INDIA"?o.expiry+"T15:30:00+05:30":o.expiry+"T23:59:59Z"),dte=(expiry-nowMs)/86400000,mid=(o.bid+o.ask)/2;
+  if(o.option_type!==right||!finite(o.strike)||!Number.isInteger(o.lot_size)||o.lot_size<1||!finite(o.delta)||Math.abs(o.delta)<.35||Math.abs(o.delta)>.65||!finite(o.iv)||o.iv<=0||o.iv>1.5||!Number.isInteger(o.open_interest)||o.open_interest<(region==="INDIA"?500:100)||!Number.isInteger(o.volume)||o.volume<(region==="INDIA"?50:10)||dte<7||dte>(region==="INDIA"?45:60)||mid<=0||(o.ask-o.bid)/mid>(region==="INDIA"?.025:.05))continue;
   const existing=await env.DB.prepare("SELECT id FROM bot_positions WHERE region=? AND instrument_id=? AND status='OPEN'").bind(region,o.contract_id).first();if(existing)continue;
   optionPicks.push({o,s,rank:Math.abs(Math.abs(o.delta)-.5)+(o.ask-o.bid)/mid});
  }
