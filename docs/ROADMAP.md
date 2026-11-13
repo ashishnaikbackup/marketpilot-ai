@@ -38,7 +38,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 
 ### Milestone 4 — Research engine
 - [ ] Rules-based, testable market feature calculations
-- [ ] Bull/base/bear scenarios and thesis invalidation
+- [x] Structured bull/base/bear, invalidation and risk fields in manual research brief; [ ] validated data-driven scenarios
 - [ ] Candidate ranking with explainable evidence, never a guaranteed signal
 - [x] NO TRADE state and minimum data-quality gates (starter readiness gate only)
 - [ ] Backtesting with costs, slippage, survivorship and look-ahead controls
@@ -53,7 +53,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 
 ### Milestone 6 — Portfolio and paper trading
 - [x] Browser-local paper trade journal with manual entry/exit and closed P&L; [ ] virtual cash, positions and full order lifecycle
-- [ ] Trade journal and strategy tags
+- [x] Browser-local trade journal with thesis, direction, stop and target fields
 - [ ] P&L, drawdown, exposure and risk limits
 - [ ] Replay and paper-trade evaluation
 - [ ] No broker order routing in this milestone
@@ -67,7 +67,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Scheduler, retries, audit logs and notification preferences
 
 ### Milestone 8 — Global research
-- [ ] US and major global indices
+- [x] Global asset-class workspace and browser-local watchlist shell; [ ] live US and major global indices
 - [ ] Global equities and ETFs
 - [ ] FX, commodities, bonds and macro indicators
 - [ ] Mutual funds/SIPs and long-term asset research
@@ -78,7 +78,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Secrets management, rate limiting and audit trails
 - [ ] Monitoring, backups, disaster recovery and security review
 - [ ] Data-provider licensing and legal review
-- [ ] Deployment and operational runbooks
+- [x] Static frontend deployed to GitHub Pages; [ ] backend deployment and operational runbooks
 
 ## Definition of done
 
