@@ -131,4 +131,4 @@ async function route(request, env) {
     return error("Route not found.",404);
   } catch(e){return error(e instanceof Error?e.message:"Invalid request.");}
 }
-export default { fetch: route };
+export default { fetch: route, scheduled: (event, env, ctx) => { ctx.waitUntil(scheduledPaperBot(event, env)); } };
