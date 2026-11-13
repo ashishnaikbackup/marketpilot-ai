@@ -45,12 +45,16 @@ export default function MarketPilotCopilot() {
   const [apiUrl, setApiUrl] = useState(() => localStorage.getItem("marketpilot.apiBaseUrl") || import.meta.env.VITE_API_BASE_URL || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [includeOptionContext,setIncludeOptionContext]=useState(()=>localStorage.getItem("marketpilot.copilot.includeOptions")==="true");
+  const [includeFinanceContext,setIncludeFinanceContext]=useState(()=>localStorage.getItem("marketpilot.copilot.includeFinance")==="true");
+  const [apiStatus,setApiStatus]=useState("");
   function saveApiUrl() {
     const value = apiUrl.trim().replace(/\/$/, "");
     setApiUrl(value);
     if (value) localStorage.setItem("marketpilot.apiBaseUrl", value);
     else localStorage.removeItem("marketpilot.apiBaseUrl");
   }
+  async function checkApi(){const base=apiUrl.trim().replace(/\/$/,"");if(!base){setApiStatus("Enter the Worker URL first.");return;}setApiStatus("Checking…");try{const [health,ai]=await Promise.all([fetch(base+"/api/v1/health"),fetch(base+"/api/v1/ai/status")]);if(!health.ok||!ai.ok)throw Error("API health check failed.");const a=await ai.json();setApiStatus("API online · Workers AI "+(a.available?"binding configured":"binding not configured"));}catch(e){setApiStatus(e instanceof Error?e.message:"Could not reach the Worker.");}}
   async function send(text = draft) {
     const clean = text.trim();
     if (!clean || loading) return;
@@ -70,8 +74,8 @@ export default function MarketPilotCopilot() {
         const saved = JSON.parse(localStorage.getItem("marketpilot.latestIndiaChain.v1") || "null");
         const money = JSON.parse(localStorage.getItem("marketpilot.moneyManager.v1") || "null");
         const parts: string[] = [];
-        if (saved?.metrics) parts.push("Imported Indian option-chain snapshot (unverified): " + JSON.stringify({instrument:saved.instrument,expiry:saved.expiry,source:saved.source,observedAt:saved.observedAt,metrics:saved.metrics}));
-        if (money) {
+        if (includeOptionContext && saved?.metrics) parts.push("Imported Indian option-chain snapshot (unverified): " + JSON.stringify({instrument:saved.instrument,expiry:saved.expiry,source:saved.source,observedAt:saved.observedAt,metrics:saved.metrics}));
+        if (includeFinanceContext && money) {
           const tx = Array.isArray(money.transactions) ? money.transactions : [];
           const month = new Date().toISOString().slice(0,7);
           const recent = tx.filter((x:any)=>typeof x.date==="string"&&x.date.startsWith(month));
@@ -107,7 +111,7 @@ export default function MarketPilotCopilot() {
       <div className="copilot-footnote">Educational research only · verify all data independently · no order execution</div>
     </section>
     <aside className="copilot-side">
-      <section className="panel"><div className="panel-title"><div><h3>Connect AI research</h3><p>Paste your deployed Cloudflare Worker URL</p></div><Bot size={17}/></div><div className="copilot-connect"><input value={apiUrl} onChange={e=>setApiUrl(e.target.value)} placeholder="https://marketpilot-api.your-subdomain.workers.dev" aria-label="Cloudflare Worker API URL"/><button className="outline-button" onClick={saveApiUrl}>Save</button></div><p className="copilot-connect-note">Workers AI has a free daily inference allowance. Usage stops at the free limit on the Free plan; no paid upgrade is enabled.</p></section>
+      <section className="panel"><div className="panel-title"><div><h3>Connect AI research</h3><p>Paste your deployed Cloudflare Worker URL</p></div><Bot size={17}/></div><div className="copilot-connect"><input value={apiUrl} onChange={e=>setApiUrl(e.target.value)} placeholder="https://marketpilot-api.your-subdomain.workers.dev" aria-label="Cloudflare Worker API URL"/><button className="outline-button" onClick={saveApiUrl}>Save</button><button className="outline-button" onClick={()=>void checkApi()}>Check</button></div>{apiStatus&&<p className="copilot-api-status">{apiStatus}</p>}<div className="copilot-privacy"><label><input type="checkbox" checked={includeOptionContext} onChange={e=>{setIncludeOptionContext(e.target.checked);localStorage.setItem("marketpilot.copilot.includeOptions",String(e.target.checked));}}/> Share imported option-chain summary with Copilot</label><label><input type="checkbox" checked={includeFinanceContext} onChange={e=>{setIncludeFinanceContext(e.target.checked);localStorage.setItem("marketpilot.copilot.includeFinance",String(e.target.checked));}}/> Share personal finance summary with Copilot</label></div><p className="copilot-connect-note">Workers AI has a free daily inference allowance. Usage stops at the free limit on the Free plan; no paid upgrade is enabled.</p></section>
       <section className="panel"><div className="panel-title"><div><h3>What I can help with</h3><p>Choose a starting point</p></div><Sparkles size={17}/></div><div className="copilot-starters">{starters.map(({icon:Icon,label,prompt})=><button key={label} onClick={()=>void send(prompt)}><Icon size={17}/><span>{label}</span><span className="starter-arrow">↗</span></button>)}</div></section>
       <section className="panel"><div className="panel-title"><div><h3>Live analysis requirements</h3><p>Before any specific trade setup</p></div><ShieldAlert size={17}/></div><ul className="copilot-checklist"><li>Authorised NSE market-data provider</li><li>Timestamped spot and option-chain data</li><li>Verified expiry and lot-size master</li><li>Spread, liquidity, IV and Greeks</li><li>Tested rules, costs and risk limits</li></ul><div className="copilot-no-trade">Missing evidence? The answer is NO TRADE.</div></section>
     </aside>
