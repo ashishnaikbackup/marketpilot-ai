@@ -61,3 +61,13 @@
 .academy-correct,.academy-wrong{font-size:9px;line-height:1.6;padding:9px;border-radius:6px;margin:9px 0}.academy-correct{background:#17352f;color:#83d7b9}.academy-wrong{background:#39262d;color:#e9a4ae}
 .academy-quiz .primary-button{margin-left:8px}
 @media(max-width:760px){.academy-body{padding-left:4px}.academy-quiz .primary-button{margin:8px 0 0}}
+
+
+.hub-upload,.history-paste{display:grid;gap:7px;color:#8e9db5;font-size:9px;margin:14px 0}
+.hub-upload input{color:#aab7cc;font-size:10px}
+.history-paste textarea{width:100%;background:#0d1728;border:1px solid #2a3851;border-radius:7px;color:#e5ebf7;padding:10px;font:10px monospace}
+.history-chart{background:#0c1525;border:1px solid #293650;border-radius:8px;padding:13px;margin:16px 0}
+.history-chart svg{width:100%;height:auto;display:block;margin-top:10px}
+.history-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.history-stats article{padding:12px;background:#0d1728;border:1px solid #26334a;border-radius:7px}
+.history-stats article strong{font-size:15px}
