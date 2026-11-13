@@ -18,7 +18,7 @@ Cloudflare's published Workers Free limits currently include 100,000 requests/da
 5. In **Worker → Settings → Bindings**, add a **Workers AI** binding named exactly `AI` (the repository's `wrangler.toml` also declares this binding for Wrangler deployments).
 6. Your API base URL will look like `https://marketpilot-api.<your-account-subdomain>.workers.dev`.
 7. Test `GET /api/v1/health`. It should return JSON with status `ok`.
-8. Open MarketPilot → AI Copilot, paste the API base URL and save it. This enables `POST /api/v1/ai/chat` through the Workers AI binding. The selected Gemma model is intended for the Workers AI Free allowance; the published free allocation is 10,000 Neurons per day. On Workers Free, requests stop when the allowance is exceeded; do not upgrade to a paid plan.
+8. Open MarketPilot → AI Copilot and paste the API base URL for local educational calculations. The hosted AI chat endpoint is disabled by default; do not enable it until Cloudflare-side rate limiting and abuse monitoring are configured. Only then set the Worker variable `AI_CHAT_ENABLED=true` and verify the free-plan quota before use.
 9. Open MarketPilot → Backtest Lab and paste the same API base URL to enable the SMA backtest.
 
 No paid Render service is required for this architecture. Account signup or verification prompts can vary; keep the account on the Free plan and do not enable paid Cloudflare Workers or paid add-ons.
@@ -38,11 +38,11 @@ If those secrets are not configured, the workflow safely skips deployment. GitHu
 
 ## Optional AI Copilot (free allocation)
 
-The Worker includes `POST /api/v1/ai/chat`, using the Workers AI binding and the `@cf/google/gemma-4-26b-a4b-it` model. The model runs server-side; no AI key is exposed in the browser. The endpoint restricts message roles, message count and per-message length, and adds a fixed MarketPilot research policy that forbids fabricated quotes and unsupported CE/PE calls.
+The Worker includes an optional `POST /api/v1/ai/chat` route using the Workers AI binding and the `@cf/google/gemma-4-26b-a4b-it` model. The model runs server-side; no AI key is exposed in the browser. The route is **disabled by default** through the `AI_CHAT_ENABLED` opt-in flag. Keep it disabled until Cloudflare-side rate limiting and abuse monitoring are configured. When enabled, it restricts message roles, message count and per-message length, and adds a fixed MarketPilot research policy that forbids fabricated quotes and unsupported CE/PE calls.
 
 Cloudflare currently publishes a 10,000-Neuron daily free allocation for Workers AI. On the Workers Free plan, inference stops when the free allowance is exceeded; keep the account on the Free plan and do not enable paid upgrades. Some other models require a paid plan, so do not change the configured model without checking current model eligibility. See the official [Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/) and [Workers AI setup guide](https://developers.cloudflare.com/workers-ai/get-started/workers-wrangler/).
 
-The Copilot sends recent chat messages and a compact summary of the locally imported option-chain snapshot to the Worker. Do not paste account credentials, personal identifiers, broker tokens or other secrets into chat. AI output is educational and may be wrong; it is not a trading signal or investment advice. The AI endpoint is public once deployed, so keep requests short and monitor usage in the Cloudflare dashboard. A daily allowance is not a guarantee of uninterrupted model capacity.
+The Copilot can send recent chat messages and, only when the user opts in, a compact summary of the locally imported option-chain snapshot to the Worker. Do not paste account credentials, personal identifiers, broker tokens or other secrets into chat. AI output is educational and may be wrong; it is not a trading signal or investment advice. The AI endpoint is public once enabled, so keep requests short and monitor usage in the Cloudflare dashboard. A daily allowance is not a guarantee of uninterrupted model capacity.
 
 ## India-first research workflow (current MVP)
 
@@ -50,7 +50,7 @@ The frontend includes an **India Market Lab** for NIFTY, BANKNIFTY and FINNIFTY.
 
 The Worker option-chain analytics endpoint also returns OI totals, PCR, change-OI totals/ratio, volume totals, highest OI strikes and max pain from caller-supplied rows. It does not fetch or validate NSE data. The CSV importer cannot verify that the provider is authorised, the contract master is current, the timestamp is genuine, or the snapshot is complete. A max-pain calculation is an expiry payoff statistic, not a price forecast.
 
-This is an offline/manual-data workflow, not a live market scanner. The Copilot is not yet connected to an LLM. No CE/PE buy/sell signal, best-entry time or execution instruction is generated from this data.
+This is an offline/manual-data workflow, not a live market scanner. The Copilot can use local educational rules and an optional Workers AI model when safely enabled, but it does not retrieve external sources or verify imported data. No CE/PE buy/sell signal, best-entry time or execution instruction is generated from this data.
 
 ## Why not use a free hosted database immediately?
 
@@ -60,7 +60,7 @@ The current app's holdings, trade journal, reports and Academy progress are brow
 
 - No NSE/BSE or global live market feed, option chain, broker integration or real-time trade timing.
 - No free hosting plan grants rights to redistribute exchange data. A licensed provider is still required.
-- AI chat is optional through the Workers AI binding and its free daily allowance. It is not a live market feed, trading signal or execution engine; without the binding, the endpoint returns a configuration error.
+- AI chat is disabled by default and requires an explicit Worker variable plus Cloudflare-side rate limiting before enablement. It is not a live market feed, trading signal or execution engine.
 - Browser-local records do not sync across devices and can be lost if browser storage is cleared. Export/backup before changing devices.
 - Workers Free has strict CPU and request limits; large analytics should run locally or in a separately budgeted service.
 
