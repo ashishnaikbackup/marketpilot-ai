@@ -6,7 +6,7 @@ def sma_crossover_backtest(closes: list[float], fast: int = 5, slow: int = 20,
                            fee_bps: float = 5.0, slippage_bps: float = 5.0) -> dict:
     if not 2 <= fast < slow <= 500:
         raise ValueError("Require 2 <= fast < slow <= 500.")
-    if len(closes) < slow + 2:
+    if len(closes) < slow + 3:
         raise ValueError("Not enough closing prices for the selected windows.")
     if any(not isfinite(x) or x <= 0 for x in closes):
         raise ValueError("Closing prices must be finite positive numbers.")
@@ -18,7 +18,7 @@ def sma_crossover_backtest(closes: list[float], fast: int = 5, slow: int = 20,
     trades = 0
     cost_rate = (fee_bps + slippage_bps) / 10000
     # Signal from completed bar t is applied at close t+1 to avoid same-bar look-ahead.
-    for i in range(slow, len(closes) - 1):
+    for i in range(slow, len(closes) - 2):
         f = sum(closes[i-fast+1:i+1]) / fast
         s = sum(closes[i-slow+1:i+1]) / slow
         desired = 1 if f > s else 0
