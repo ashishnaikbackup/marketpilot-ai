@@ -71,3 +71,48 @@ def black_scholes_greeks(
         theta_per_year=theta,
         vega_per_1pct=vega,
     )
+
+
+def implied_volatility(
+    side: OptionSide,
+    spot: float,
+    strike: float,
+    years_to_expiry: float,
+    risk_free_rate: float,
+    option_price: float,
+    tolerance: float = 1e-7,
+    max_iterations: int = 100,
+) -> float:
+    """Solve European Black-Scholes implied volatility by bisection.
+
+    Returns annualised volatility as a decimal. Requires a positive option price
+    within the model's price range for volatility in (0, 5].
+    """
+    if option_price <= 0:
+        raise ValueError("option_price must be positive")
+    if tolerance <= 0 or max_iterations < 1:
+        raise ValueError("solver tolerance and iteration count must be positive")
+
+    low, high = 1e-6, 5.0
+    low_price = black_scholes_greeks(
+        side, spot, strike, years_to_expiry, risk_free_rate, low
+    ).theoretical_price
+    high_price = black_scholes_greeks(
+        side, spot, strike, years_to_expiry, risk_free_rate, high
+    ).theoretical_price
+    if option_price < low_price - tolerance or option_price > high_price + tolerance:
+        raise ValueError("option_price is outside the supported Black-Scholes price range")
+
+    for _ in range(max_iterations):
+        mid = (low + high) / 2.0
+        model_price = black_scholes_greeks(
+            side, spot, strike, years_to_expiry, risk_free_rate, mid
+        ).theoretical_price
+        if abs(model_price - option_price) <= tolerance:
+            return mid
+        if model_price < option_price:
+            low = mid
+        else:
+            high = mid
+
+    return (low + high) / 2.0
