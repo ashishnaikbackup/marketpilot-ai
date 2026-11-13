@@ -31,7 +31,7 @@ The user wants a functional, research-first financial intelligence platform. Ind
 - Paper Portfolio: browser-local journal with hypothetical entry, stop, target and manual exit; closed P&L is hypothetical, no broker orders.
 - Research Reports: browser-local structured bull/base/bear brief, invalidation/risk/source notes and Markdown export.
 - Global Markets: asset-class coverage map and browser-local watchlist, no live quotes.
-- Investment Hub (FinPilot integration): manual multi-asset holdings ledger with INR FX conversion and unrealised P&L; assumption-based asset comparison; SIP, lump-sum and goal calculators; research journal; India session timing education and trade-readiness checklist; CSV historical asset analyzer with total return, CAGR, annualised volatility, max drawdown, RSI and SMA20/50; position sizing, stop-loss, target, reward/risk and hypothetical P&L planner. Browser-local data only.
+- Investment Hub (FinPilot integration): manual multi-asset holdings ledger with INR FX conversion and unrealised P&L; assumption-based asset comparison; SIP, lump-sum and goal calculators; research journal; India session timing education and trade-readiness checklist; CSV historical asset analyzer with total return, CAGR, annualised volatility, max drawdown, RSI and SMA20/50; position sizing, stop-loss, target, reward/risk and hypothetical P&L planner; official links for NYSE, JPX/Tokyo and HKEX cash-session times. Browser-local data only.
 - Learn: interactive self-paced Academy with 9 modules, knowledge checks and browser-local completion progress.
 - Backtest Lab: interactive UI accepting chronological user-supplied closing prices and calling the SMA crossover API; requires a separately deployed API URL.
 - Browser-local storage is not a cloud backup or multi-device account.
@@ -57,9 +57,9 @@ The user wants a functional, research-first financial intelligence platform. Ind
 - Frontend GitHub Pages workflow `.github/workflows/deploy-pages.yml`.
 - Vite base path configured for `/marketpilot-ai/`.
 - Current static site: https://ashishnaikbackup.github.io/marketpilot-ai/
-- Latest verified implementation commit: `bc8df11b751f0a1e63b5d00fe3bfe3e89eec3328`.
-- CI passed at that commit: backend Ruff + pytest and frontend TypeScript/Vite production build. Run: https://github.com/ashishnaikbackup/marketpilot-ai/actions/runs/43390795663
-- GitHub Pages deployment succeeded for that commit. Run: https://github.com/ashishnaikbackup/marketpilot-ai/actions/runs/43390795667
+- Latest verified code commit: `083d06fe0cc41665f459c2bb5bc75e6aa8e29397`.
+- CI passed at that commit: backend Ruff + pytest and frontend TypeScript/Vite production build. Run: https://github.com/ashishnaikbackup/marketpilot-ai/actions/runs/43392280179
+- GitHub Pages deployment for the expanded dashboard is queued/in progress; verify the latest `Deploy MarketPilot AI frontend to GitHub Pages` run before claiming the new UI is published.
 - Read `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/DEPLOYMENT.md`, `docs/SAFETY_AND_COMPLIANCE.md`, `docs/MARKET_DATA_PROVIDER.md` and `docs/OPTIONS_MODELS.md`.
 
 ### Highest-priority remaining work
