@@ -16,6 +16,7 @@ type Report = { date:string; createdAt:string; opened:number; closed:number; win
 const ROWS_KEY="marketpilot.paperBot.rows.v1";
 const TRADES_KEY="marketpilot.paperBot.trades.v1";
 const REPORTS_KEY="marketpilot.paperBot.reports.v1";
+const indiaDate=(value:string)=>{const d=new Date(value);return Number.isNaN(d.getTime())?"":new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);};
 const money=(v:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2}).format(v);
 const num=(v:string|undefined)=>{const n=Number(v);return Number.isFinite(n)?n:0;};
 function csvParse(text:string):Row[] {
@@ -114,8 +115,8 @@ export default function PaperTradingBot(){
     const daily=makeReport(next,notes,skips,latestDate);setReport(daily);const savedReports=[daily,...reports.filter(x=>x.date!==daily.date)];setReports(savedReports);localStorage.setItem(REPORTS_KEY,JSON.stringify(savedReports));setBusy(false);
   }
   function makeReport(sourceTrades:Trade[],decisions:string[],skip:string[],asOf:string):Report{
-    const today=new Date().toISOString().slice(0,10),dayTrades=sourceTrades.filter(t=>t.openedAt.slice(0,10)===today||t.closedAt?.slice(0,10)===today),closed=dayTrades.filter(t=>t.status==="CLOSED"),r=closed.reduce((s,t)=>s+t.pnl,0);
-    return {date:today,createdAt:new Date().toISOString(),opened:dayTrades.filter(t=>t.openedAt.slice(0,10)===today).length,closed:closed.length,wins:closed.filter(t=>t.pnl>0).length,losses:closed.filter(t=>t.pnl<0).length,realised:r,openPnl:sourceTrades.filter(t=>t.status==="OPEN").reduce((s,t)=>s+t.pnl,0),decisions, dataAsOf:asOf,skipped:skip};
+    const today=indiaDate(new Date().toISOString()),dayTrades=sourceTrades.filter(t=>indiaDate(t.openedAt)===today||Boolean(t.closedAt&&indiaDate(t.closedAt)===today)),closed=dayTrades.filter(t=>t.status==="CLOSED"),r=closed.reduce((s,t)=>s+t.pnl,0);
+    return {date:today,createdAt:new Date().toISOString(),opened:dayTrades.filter(t=>indiaDate(t.openedAt)===today).length,closed:closed.length,wins:closed.filter(t=>t.pnl>0).length,losses:closed.filter(t=>t.pnl<0).length,realised:r,openPnl:sourceTrades.filter(t=>t.status==="OPEN").reduce((s,t)=>s+t.pnl,0),decisions, dataAsOf:asOf,skipped:skip};
   }
   function createReport(){const r=makeReport(trades,[],[],latestDate);setReport(r);const next=[r,...reports.filter(x=>x.date!==r.date)];setReports(next);localStorage.setItem(REPORTS_KEY,JSON.stringify(next));}
   function downloadReport(){if(!report)return;const text=[`MARKETPILOT AI — PAPER BOT DAILY REPORT`,`Date: ${report.date}`,`Generated: ${report.createdAt}`,`Data as of: ${report.dataAsOf||"not available"}`,`Data source: ${source} (unverified)`,`New paper trades: ${report.opened}`,`Closed paper trades: ${report.closed}`,`Wins / losses: ${report.wins} / ${report.losses}`,`Realised simulated P&L: ${money(report.realised)}`,`Open simulated P&L: ${money(report.openPnl)}`,`Decision log:`,...(report.decisions.length?report.decisions:["No new paper entries during this report."]),`Skipped / safeguards:`,...(report.skipped.length?report.skipped:["None recorded."]),`DISCLAIMER: Simulated only. User-imported prices are unverified. No live provider or broker is connected. Fees, slippage, taxes and market impact are not fully modelled.`].join("\n");const blob=new Blob([text],{type:"text/plain;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`marketpilot-paper-report-${report.date}.txt`;a.click();URL.revokeObjectURL(url);}
