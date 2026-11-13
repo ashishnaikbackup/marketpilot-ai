@@ -13,7 +13,7 @@ This is a source-level review of the current frontend, Cloudflare Worker, GitHub
 - The Cloudflare Worker has public endpoints. CORS is not authentication and does not prevent scripts or server-to-server clients from calling an endpoint.
 - The Worker AI route is disabled by default through the AI_CHAT_ENABLED opt-in flag. Keep it disabled until Cloudflare-side rate limiting and abuse monitoring are configured and account-level AI limits are verified. If enabled, treat it as an exposed, quota-consuming endpoint. Do not put an API secret in frontend code.
 - No broker order-placement route is implemented. No market-data provider is configured. No live quote, option-chain, or trade-signal claim should be made.
-- GitHub Actions currently builds/tests the backend, frontend and Worker. Deployment secrets should be limited to the minimum scopes and stored only as repository/environment secrets.
+- GitHub Actions builds/tests the backend, frontend and Worker. The npm audit checks for the frontend and Worker toolchain returned zero advisories after upgrading Wrangler to 4.161.0 (2026-11-13). Python dependency auditing and a full secret-history scan are still outstanding. Deployment secrets should be limited to the minimum scopes and stored only as repository/environment secrets.
 
 ## Pre-launch checks
 
