@@ -21,7 +21,7 @@ Cloudflare's published Workers Free limits currently include 100,000 requests/da
 8. Open MarketPilot → AI Copilot, paste the API base URL and save it. This enables `POST /api/v1/ai/chat` through the Workers AI binding. The selected Gemma model is intended for the Workers AI Free allowance; the published free allocation is 10,000 Neurons per day. On Workers Free, requests stop when the allowance is exceeded; do not upgrade to a paid plan.
 9. Open MarketPilot → Backtest Lab and paste the same API base URL to enable the SMA backtest.
 
-No card or paid Render service is required for this architecture. Do not enable paid Cloudflare Workers or paid add-ons unless you deliberately choose to.
+No paid Render service is required for this architecture. Account signup or verification prompts can vary; keep the account on the Free plan and do not enable paid Cloudflare Workers or paid add-ons.
 
 
 
