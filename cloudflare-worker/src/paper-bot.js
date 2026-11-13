@@ -4,6 +4,17 @@ const finite=x=>typeof x==="number"&&Number.isFinite(x);
 const now=()=>new Date().toISOString();
 const id=()=>crypto.randomUUID();
 const avg=a=>a.reduce((s,x)=>s+x,0)/a.length;
+async function telegramNotify(env,region,report){
+ if(!env?.TELEGRAM_BOT_TOKEN||!env?.TELEGRAM_CHAT_ID)return false;
+ const buys=(report.decisions||[]).filter(x=>x.action==="PAPER_BUY").map(x=>"- BUY "+x.symbol+" @ "+(x.entry??"—")+" · "+(x.quantity??1)+" x "+(x.lot_size??1));
+ const exits=(report.decisions||[]).filter(x=>x.action==="CLOSE").map(x=>"- EXIT "+x.symbol+" · "+x.reason+" · P&L "+(x.pnl??"—"));
+ const currency=region==="INDIA"?"₹":"$";
+ const message=["MARKETPILOT · PAPER BOT",region+" end-of-day report","Status: "+(report.status||"completed"),"Time: "+(report.completed_at||now()),"Scanned: "+(report.scanned??0)+" · opened: "+(report.opened??0)+" · closed: "+(report.closed??0),"Realised P&L: "+currency+(report.realized_this_run??report.realized_pnl??0),"Source: "+(report.source||"unavailable")+" · "+(report.data_mode||"unknown"),...(buys.length?["Paper buys:",...buys]:["No new simulated buys."]),...(exits.length?["Exits:",...exits]:[]),"SIMULATED ONLY — no broker orders sent."].join(String.fromCharCode(10)).slice(0,3900);
+ try{
+  const response=await fetch("https://api.telegram.org/bot"+env.TELEGRAM_BOT_TOKEN+"/sendMessage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,text:message,disable_web_page_preview:true})});
+  return response.ok;
+ }catch{return false;}
+}
 function trend(i){
  const c=i.candles?.map(x=>x.close);
  if(!Array.isArray(c)||c.length<55||!c.every(x=>finite(x)&&x>0))return {side:"NONE",reason:"Need at least 55 valid daily closes."};
@@ -119,6 +130,7 @@ export async function scheduledPaperBot(event,env){
    const r=await fetch(u.toString(),{headers:env.MARKET_DATA_API_TOKEN?{Authorization:"Bearer "+env.MARKET_DATA_API_TOKEN}:{}});
    if(!r.ok)throw Error("Provider adapter HTTP "+r.status);
    const result=await run(await r.json(),env,eod?"scheduled_eod":"scheduled_intraday");
+   if(eod)await telegramNotify(env,region,result);
    if(result?.status==="skipped"){
     const at=now();await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?,?,?,?,?,?,?,0,0,0,0,?)")
      .bind(id(),region,eod?"scheduled_eod":"scheduled_intraday","unavailable","unavailable",at,at,now(),"skipped",JSON.stringify(result)).run();
@@ -126,6 +138,7 @@ export async function scheduledPaperBot(event,env){
   }catch(e){
    const at=now();await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?, ?,?,?,?,?,?,0,0,0,0,?)")
     .bind(id(),region,eod?"scheduled_eod":"scheduled_intraday","unavailable","unavailable",at,at,now(),"skipped",JSON.stringify({status:"skipped",region,reason:e instanceof Error?e.message:"Market data unavailable."})).run();
+   if(eod)await telegramNotify(env,region,{status:"skipped",region,completed_at:at,reason:e instanceof Error?e.message:"Market data unavailable.",decisions:[]});
   }
  }
 }
