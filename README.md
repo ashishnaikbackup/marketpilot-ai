@@ -33,7 +33,7 @@ MarketPilot AI is a research-first financial intelligence platform. Its first pr
 backend/        FastAPI service, domain calculations and tests
 frontend/       React + TypeScript + Vite dashboard
 docs/           Product, architecture, roadmap and safety decisions
-.github/        CI workflows (to be added)
+.github/        CI and GitHub Pages deployment workflows
 ```
 
 ## Quick start
