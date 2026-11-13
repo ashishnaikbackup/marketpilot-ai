@@ -5,7 +5,7 @@
 A deterministic, versioned educational simulation engine. It is not a broker, financial adviser, validated strategy, or promise of profit. It sends no real orders.
 
 - Separate virtual books: India INR 1,000,000 and Global USD 10,000.
-- Cash equity/ETF rule: long-only trend filter using 20/50-session simple moving averages, 14-period RSI and five-session momentum.
+- Cash equity/ETF and futures rule: long-only trend filter using 20/50-session simple moving averages, 14-period RSI and five-session momentum. Futures require a valid contract ID, unexpired contract and verified lot size; position sizing counts the full lot multiplier.
 - Options rule: long premium only. India uses CE/PE; global uses CALL/PUT. The underlying trend selects the option side. Contracts must pass expiry, delta, bid/ask spread, open-interest and volume filters.
 - Risk guardrails: 0.25% of virtual equity risk budget per idea, 8% notional cap, maximum 12 concurrent positions, maximum four options, one lot per option position, 3% equity stop / 6% target, 30% option premium stop / 45% target, ten-day time exit.
 - Entries use ask; marks/exits use bid. If quotes are stale or missing, no trade/mark is invented.
@@ -28,9 +28,9 @@ Required root fields:
 
 Each instrument:
 - symbol: unique canonical symbol
-- asset_class: EQUITY, ETF or INDEX
+- asset_class: EQUITY, ETF, INDEX or FUTURE. INDEX instruments are signal-only and are not purchased directly.
 - candles: at least 55 daily close bars in chronological order, e.g. [{ "timestamp":"2026-08-01T00:00:00Z", "close":123.45 }]
-- quote: { "bid":123.4, "ask":123.5, "timestamp":"2026-11-13T10:19:58Z" }
+- quote: { "bid":123.4, "ask":123.5, "timestamp":"2026-11-13T10:19:58Z" }\n- for FUTURE only: instrument_id, expiry (YYYY-MM-DD), and lot_size from the current contract master
 
 Each option contract:
 - contract_id, symbol, underlying
