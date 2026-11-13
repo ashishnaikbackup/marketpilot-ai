@@ -76,3 +76,12 @@ test("AI chat uses the server-side research guardrails and returns model output"
   assert.match(sentMessages[1].content,/user-supplied context/);
   assert.match(result.answer,/descriptive/);
 });
+
+test("AI status reports whether the Workers AI binding is configured", async () => {
+  const absent = await app.fetch(new Request("https://unit.test/api/v1/ai/status"));
+  assert.equal((await absent.json()).available, false);
+  const configured = await app.fetch(new Request("https://unit.test/api/v1/ai/status"), {AI:{run:async()=>({response:"ok"})}});
+  const result = await configured.json();
+  assert.equal(result.available, true);
+  assert.equal(result.mode, "configured");
+});
