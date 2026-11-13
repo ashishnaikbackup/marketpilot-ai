@@ -48,8 +48,8 @@ The user wants a functional, research-first financial intelligence platform. Ind
 - Frontend GitHub Pages workflow `.github/workflows/deploy-pages.yml`.
 - Vite base path configured for `/marketpilot-ai/`.
 - Current static site: https://ashishnaikbackup.github.io/marketpilot-ai/
-- Latest confirmed CI run passed at commit `23a6985cdd6dec5acd639588558112f63d57380e` (backend Ruff + pytest and frontend TypeScript/Vite build).
-- GitHub Pages deployment succeeded for the frontend at commit `3d455e02900e5608b21a9ea0e10935bec13766f4`; later commits after that deployment were documentation-only. Re-run deployment after any frontend change.
+- Latest confirmed CI run passed at commit `3b57f65f10d699bad8b2ebdefa7e60df6cd2f8eb` (backend Ruff + pytest and frontend TypeScript/Vite build).
+- GitHub Pages deployment succeeded for the frontend at commit `a811bd7d50180181ad9101d2369a4c03dc878cfd`; later commits after that deployment were backend/tests/documentation-only. Re-run deployment after any frontend change.
 - Read `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/SAFETY_AND_COMPLIANCE.md`, `docs/MARKET_DATA_PROVIDER.md` and `docs/OPTIONS_MODELS.md`.
 
 ### Highest-priority remaining work
