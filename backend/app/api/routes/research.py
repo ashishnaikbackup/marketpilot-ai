@@ -41,6 +41,8 @@ def screen_research(payload: DataQualityRequest) -> dict:
         reasons.append("Demo data cannot generate a market opportunity.")
     if payload.data_mode == "historical":
         reasons.append("Historical data is for replay and study, not a current opportunity.")
+    if payload.data_mode == "eod":
+        reasons.append("End-of-day data cannot be used for intraday opportunity screening.")
     if payload.data_mode == "unavailable":
         reasons.append("No usable market data is available.")
     if not payload.source or not payload.exchange:
