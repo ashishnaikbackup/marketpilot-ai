@@ -21,6 +21,15 @@ Cloudflare's published Workers Free limits currently include 100,000 requests/da
 
 No card or paid Render service is required for this architecture. Do not enable paid Cloudflare Workers or paid add-ons unless you deliberately choose to.
 
+
+## India-first research workflow (current MVP)
+
+The frontend includes an **India Market Lab** for NIFTY, BANKNIFTY and FINNIFTY. It accepts a manually pasted option-chain CSV, requires an expiry, a named source, an observation timestamp and underlying spot, then calculates descriptive PCR, change-in-OI PCR, modelled max pain, highest call/put OI strikes, ATM IV and average quoted spread where fields exist. The snapshot is stored only in the current browser's localStorage and can be read by the rule-based Copilot for an educational explanation.
+
+The Worker option-chain analytics endpoint also returns OI totals, PCR, change-OI totals/ratio, volume totals, highest OI strikes and max pain from caller-supplied rows. It does not fetch or validate NSE data. The CSV importer cannot verify that the provider is authorised, the contract master is current, the timestamp is genuine, or the snapshot is complete. A max-pain calculation is an expiry payoff statistic, not a price forecast.
+
+This is an offline/manual-data workflow, not a live market scanner. The Copilot is not yet connected to an LLM. No CE/PE buy/sell signal, best-entry time or execution instruction is generated from this data.
+
 ## Why not use a free hosted database immediately?
 
 The current app's holdings, trade journal, reports and Academy progress are browser-local. A database would require authentication, user isolation, backup/restore and privacy controls. Adding a database just to appear more "production" would increase complexity and create a new free-tier dependency. Supabase Free is an option later (500 MB database per project, pauses after one week of inactivity; verify current limits at https://supabase.com/pricing), but it is not needed for this single-user MVP.
