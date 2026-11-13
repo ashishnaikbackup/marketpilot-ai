@@ -11,7 +11,7 @@ This is a source-level review of the current frontend, Cloudflare Worker, GitHub
 - The repository is public. Never commit provider API keys, broker credentials, personal identifiers, bank statements, access tokens or .env files.
 - The browser frontend uses localStorage for personal-finance entries, watchlists, paper trades and imported option-chain snapshots. These records are local to that browser profile and are not encrypted or synchronised. Do not use shared/public devices for sensitive data.
 - The Cloudflare Worker has public endpoints. CORS is not authentication and does not prevent scripts or server-to-server clients from calling an endpoint.
-- The Worker AI route must be treated as an exposed, quota-consuming endpoint. Before enabling it for public use, add Cloudflare-side rate limiting and abuse monitoring, and verify account-level AI limits. Do not put an API secret in frontend code.
+- The Worker AI route is disabled by default through the AI_CHAT_ENABLED opt-in flag. Keep it disabled until Cloudflare-side rate limiting and abuse monitoring are configured and account-level AI limits are verified. If enabled, treat it as an exposed, quota-consuming endpoint. Do not put an API secret in frontend code.
 - No broker order-placement route is implemented. No market-data provider is configured. No live quote, option-chain, or trade-signal claim should be made.
 - GitHub Actions currently builds/tests the backend, frontend and Worker. Deployment secrets should be limited to the minimum scopes and stored only as repository/environment secrets.
 
