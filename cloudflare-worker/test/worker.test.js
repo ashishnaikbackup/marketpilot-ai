@@ -37,3 +37,20 @@ test("unverified candidate is fail-closed", async () => {
   const result=await response.json();
   assert.equal(result.decision,"NO_TRADE");
 });
+
+test("option-chain analytics returns PCR, max pain and OI concentration", async () => {
+  const response = await call("/api/v1/analytics/option-chain", {
+    rows: [
+      {strike:100, option_type:"CE", open_interest:100, change_oi:10, volume:50},
+      {strike:100, option_type:"PE", open_interest:150, change_oi:20, volume:60},
+      {strike:110, option_type:"CE", open_interest:200, change_oi:30, volume:70},
+      {strike:110, option_type:"PE", open_interest:80, change_oi:-5, volume:30}
+    ]
+  });
+  const result = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(result.pcr_oi, 230 / 300);
+  assert.equal(result.highest_call_oi_strike, 110);
+  assert.equal(result.highest_put_oi_strike, 100);
+  assert.equal(result.data_mode, "caller_supplied_unverified");
+});
