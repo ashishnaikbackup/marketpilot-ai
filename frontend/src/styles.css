@@ -376,6 +376,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .paperbot-report summary strong{font-size:10px;color:#35483a}
 .paperbot-report summary small{font-size:9px;color:#849087}
 .paperbot-report pre{max-height:340px;overflow:auto;padding:12px;border-radius:8px;background:#f6f8f6;color:#607064;font-size:9px;white-space:pre-wrap;word-break:break-word}
-.paperbot-connect .scanner-form{grid-template-columns:minmax(220px,1fr) auto auto;align-items:end}
+.paperbot-connect .scanner-form{grid-template-columns:minmax(180px,1fr) minmax(160px,.7fr) auto auto;align-items:end}
 @media(max-width:900px){.paperbot-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.paperbot-flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.paperbot-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.paperbot-flow{grid-template-columns:1fr}.paperbot-connect .scanner-form{grid-template-columns:1fr}.bot-decision{align-items:flex-start}}
