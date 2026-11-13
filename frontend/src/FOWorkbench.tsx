@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Activity, Calculator, Database, ShieldCheck } from "lucide-react";
 
-const API = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
-
 type Greeks = { theoretical_price: number; delta: number; gamma: number; theta_per_year: number; vega_per_1pct: number; model: string; disclaimer: string };
 
 export default function FOWorkbench() {
@@ -17,23 +15,29 @@ export default function FOWorkbench() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function calculate() {
+  function calculate() {
     setLoading(true); setError(""); setResult(null);
     try {
-      const response = await fetch(`${API}/options/greeks`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ side, spot: Number(spot), strike: Number(strike), years_to_expiry: Number(days) / 365, risk_free_rate: Number(rate), volatility: Number(vol) }),
-      });
-      if (!response.ok) throw new Error(`API returned ${response.status}. Is the backend running?`);
-      setResult(await response.json());
-    } catch (e) { setError(e instanceof Error ? e.message : "Unable to calculate. Check the backend."); }
+      const s=Number(spot), k=Number(strike), t=Number(days)/365, r=Number(rate), v=Number(vol);
+      if (![s,k,t,r,v].every(Number.isFinite) || s<=0 || k<=0 || t<=0 || v<=0) throw new Error("Enter positive spot, strike, time and volatility values.");
+      const erf=(x:number)=>{const sign=x<0?-1:1;const a=Math.abs(x);const p=0.3275911;const z=1/(1+p*a);const y=1-(((((1.061405429*z-1.453152027)*z)+1.421413741)*z-0.284496736)*z+0.254829592)*z*Math.exp(-a*a);return sign*y;};
+      const cdf=(x:number)=>0.5*(1+erf(x/Math.SQRT2));
+      const pdf=(x:number)=>Math.exp(-0.5*x*x)/Math.sqrt(2*Math.PI);
+      const root=Math.sqrt(t), d1=(Math.log(s/k)+(r+0.5*v*v)*t)/(v*root), d2=d1-v*root, disc=Math.exp(-r*t), density=pdf(d1);
+      const gamma=density/(s*v*root), vega=s*density*root/100, commonTheta=-(s*density*v)/(2*root);
+      const isCall=side==="call";
+      const price=isCall?s*cdf(d1)-k*disc*cdf(d2):k*disc*cdf(-d2)-s*cdf(-d1);
+      const delta=isCall?cdf(d1):cdf(d1)-1;
+      const theta=isCall?commonTheta-r*k*disc*cdf(d2):commonTheta+r*k*disc*cdf(-d2);
+      setResult({model:"black_scholes_european",theoretical_price:price,delta,gamma,theta_per_year:theta,vega_per_1pct:vega,disclaimer:"Browser-side model from user-supplied assumptions. Not a quote or signal."});
+    } catch (e) { setError(e instanceof Error ? e.message : "Unable to calculate."); }
     finally { setLoading(false); }
   }
 
   return <div className="page-stack">
     <div className="notice"><ShieldCheck size={17}/><div><strong>Market data provider not connected</strong><span>Live option chain, LTP, OI, volume, IV and exchange Greeks are intentionally unavailable. No market values are fabricated.</span></div><span className="notice-tag">NO FEED</span></div>
     <section className="panel"><div className="panel-title"><div><h3>India index derivatives</h3><p>Choose the instrument you want to research</p></div><Activity size={18} className="muted-icon"/></div><div className="workbench-controls"><label>Underlying<select value={symbol} onChange={e=>setSymbol(e.target.value)}><option>NIFTY</option><option>BANKNIFTY</option><option>FINNIFTY</option></select></label><label>Expiry<select disabled><option>Connect market calendar first</option></select></label><label>Option type<select disabled><option>CE / PE chain unavailable</option></select></label></div><div className="empty-state"><div className="empty-icon"><Database size={21}/></div><strong>{symbol} option chain is not connected</strong><span>Once an authorised feed is configured, this area will show strike, CE/PE LTP, bid/ask, volume, OI, change in OI, IV and timestamp.</span></div></section>
-    <section className="panel"><div className="panel-title"><div><h3>Modelled Greeks calculator</h3><p>European Black-Scholes · user-supplied assumptions only</p></div><Calculator size={18} className="muted-icon"/></div><div className="calculator-fields greeks-fields">
+    <section className="panel"><div className="panel-title"><div><h3>Modelled Greeks calculator</h3><p>Browser-side European Black-Scholes · user-supplied assumptions only</p></div><Calculator size={18} className="muted-icon"/></div><div className="calculator-fields greeks-fields">
       <label>Option side<select value={side} onChange={e=>setSide(e.target.value)}><option value="call">Call (CE)</option><option value="put">Put (PE)</option></select></label>
       <label>Underlying spot<input type="number" min="0.01" value={spot} onChange={e=>setSpot(e.target.value)}/></label>
       <label>Strike<input type="number" min="0.01" value={strike} onChange={e=>setStrike(e.target.value)}/></label>
@@ -43,6 +47,6 @@ export default function FOWorkbench() {
     </div><button className="primary-button" onClick={calculate} disabled={loading}>{loading ? "Calculating…" : "Calculate theoretical Greeks"}</button>
     {error && <p className="error-text">{error}</p>}
     {result && <div className="greeks-result"><div><span>Theoretical price</span><strong>{result.theoretical_price.toFixed(2)}</strong></div><div><span>Delta</span><strong>{result.delta.toFixed(4)}</strong></div><div><span>Gamma</span><strong>{result.gamma.toFixed(6)}</strong></div><div><span>Theta / year</span><strong>{result.theta_per_year.toFixed(2)}</strong></div><div><span>Vega / 1 vol point</span><strong>{result.vega_per_1pct.toFixed(4)}</strong></div></div>}
-    <p className="disclaimer-small">Model output only, not a quote or implied volatility. Assumes European exercise and omits dividends, early exercise, jumps, liquidity and trading costs.</p></section>
+    <p className="disclaimer-small">Model output calculated in this browser, not a quote or implied volatility. Assumes European exercise and omits dividends, early exercise, jumps, liquidity and trading costs.</p></section>
   </div>;
 }
