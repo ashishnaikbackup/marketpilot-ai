@@ -4,15 +4,12 @@ import { paperBotRoute } from "../src/paper-bot.js";
 
 const db = {
   prepare() {
-    return {
-      bind() {
-        return {
-          all: async () => ({ results: [] }),
-          first: async () => null,
-          run: async () => ({ success: true }),
-        };
-      },
+    const result = {
+      all: async () => ({ results: [] }),
+      first: async () => null,
+      run: async () => ({ success: true }),
     };
+    return { ...result, bind() { return result; } };
   },
 };
 const request = (path, token) => new Request("https://unit.test"+path, {
