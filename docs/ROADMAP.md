@@ -4,7 +4,7 @@
 
 The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; global assets are later modules.
 
-### Milestone 0 — Foundation (in progress)
+### Milestone 0 — Foundation (complete)
 - [x] Repository structure and product principles
 - [x] FastAPI service and health endpoint
 - [x] Initial option payoff domain functions and tests
