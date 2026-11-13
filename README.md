@@ -70,7 +70,7 @@ The static frontend can be built and hosted independently. The current Greeks ca
 - `POST /api/v1/analytics/option-chain` calculates descriptive PCR, OI, change-in-OI, volume and concentration from caller-supplied rows. It does not fetch or verify exchange data.
 - `POST /api/v1/research/candidate` applies timestamp, provenance, evidence, invalidation, risk-note and reviewed-rule gates. It can return only `NO_TRADE` or `ELIGIBLE_FOR_HUMAN_REVIEW`.
 - `POST /api/v1/backtest/sma-crossover` runs a simple long-only SMA research simulation on caller-supplied closes, with fee/slippage assumptions and drawdown. It is an educational baseline, not a validated strategy.
-- `POST /api/v1/ai/explain` optionally calls OpenAI or Anthropic using server-side secrets. It explains only supplied context and is not a quote, signal or recommendation.
+- `POST /api/v1/ai/explain` optionally calls OpenAI or Anthropic using server-side secrets. It requires a separate `MARKETPILOT_API_KEY` request header and explains only supplied context; it is not a quote, signal or recommendation.
 
 ## First implemented API
 
