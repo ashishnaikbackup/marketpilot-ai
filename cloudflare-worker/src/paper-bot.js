@@ -118,7 +118,11 @@ export async function scheduledPaperBot(event,env){
    const u=new URL(env.MARKET_DATA_SNAPSHOT_URL);u.searchParams.set("region",region);u.searchParams.set("purpose",eod?"paper-trading-eod":"paper-trading-intraday");
    const r=await fetch(u.toString(),{headers:env.MARKET_DATA_API_TOKEN?{Authorization:"Bearer "+env.MARKET_DATA_API_TOKEN}:{}});
    if(!r.ok)throw Error("Provider adapter HTTP "+r.status);
-   await run(await r.json(),env,eod?"scheduled_eod":"scheduled_intraday");
+   const result=await run(await r.json(),env,eod?"scheduled_eod":"scheduled_intraday");
+   if(result?.status==="skipped"){
+    const at=now();await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?,?,?,?,?,?,?,0,0,0,0,?)")
+     .bind(id(),region,eod?"scheduled_eod":"scheduled_intraday","unavailable","unavailable",at,at,now(),"skipped",JSON.stringify(result)).run();
+   }
   }catch(e){
    const at=now();await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?, ?,?,?,?,?,?,0,0,0,0,?)")
     .bind(id(),region,eod?"scheduled_eod":"scheduled_intraday","unavailable","unavailable",at,at,now(),"skipped",JSON.stringify({status:"skipped",region,reason:e instanceof Error?e.message:"Market data unavailable."})).run();
