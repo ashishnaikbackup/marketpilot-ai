@@ -3,6 +3,7 @@ import PayoffCalculator from "./PayoffCalculator";
 import FOWorkbench from "./FOWorkbench";
 import OpportunityScanner from "./OpportunityScanner";
 import PaperPortfolio from "./PaperPortfolio";
+import PaperTradingBot from "./PaperTradingBot";
 import ResearchReports from "./ResearchReports";
 import Learn from "./Learn";
 import StrategyLab from "./StrategyLab";
@@ -19,11 +20,11 @@ import {
   Wallet, X, Bot,
 } from "lucide-react";
 
-type Tab = "Overview" | "F&O Workbench" | "Opportunity Scanner" | "Strategy Lab" | "Paper Portfolio" | "Research Reports" | "Global Markets" | "Academy" | "Backtest Lab" | "Investment Hub" | "AI Copilot" | "India Market Lab" | "Money Manager";
+type Tab = "Overview" | "F&O Workbench" | "Opportunity Scanner" | "Strategy Lab" | "Paper Portfolio" | "Paper Trading Bot" | "Research Reports" | "Global Markets" | "Academy" | "Backtest Lab" | "Investment Hub" | "AI Copilot" | "India Market Lab" | "Money Manager";
 const nav: { label: Tab; icon: typeof LayoutDashboard }[] = [
   { label: "Overview", icon: LayoutDashboard }, { label: "AI Copilot", icon: Bot }, { label: "Money Manager", icon: Wallet }, { label: "India Market Lab", icon: Activity }, { label: "F&O Workbench", icon: BarChart3 },
   { label: "Opportunity Scanner", icon: Target }, { label: "Strategy Lab", icon: SlidersHorizontal },
-  { label: "Paper Portfolio", icon: Wallet }, { label: "Research Reports", icon: CalendarDays },
+  { label: "Paper Portfolio", icon: Wallet }, { label: "Paper Trading Bot", icon: Bot }, { label: "Research Reports", icon: CalendarDays },
   { label: "Global Markets", icon: Globe2 }, { label: "Investment Hub", icon: Wallet }, { label: "Backtest Lab", icon: Activity }, { label: "Academy", icon: BookOpen },
 ];
 const marketWatchlist = ["NIFTY 50", "BANKNIFTY", "FINNIFTY", "INDIA VIX"];
@@ -62,7 +63,7 @@ export default function App() {
         <section className="section-block lower-grid"><article className="panel"><div className="panel-title"><div><h3>Opportunity scanner</h3><p>Evidence-led candidates, including NO TRADE</p></div><Target size={18} className="muted-icon"/></div><div className="empty-state"><div className="empty-icon"><Compass size={21}/></div><strong>No opportunities generated</strong><span>Scanner stays inactive until reliable market data and tested rules are configured.</span></div></article>
           <article className="panel"><div className="panel-title"><div><h3>Research schedule</h3><p>Automated reporting roadmap</p></div><CalendarDays size={18} className="muted-icon"/></div>{[{title:"Pre-market brief",desc:"India cues · global markets · event calendar",icon:TrendingUp},{title:"Closing report",desc:"Index recap · breadth · F&O activity",icon:BarChart3},{title:"Weekly & monthly review",desc:"Performance · risk · themes · lessons",icon:CalendarDays}].map(({title,desc,icon:Icon})=><div className="report-row" key={title}><div className="report-icon"><Icon size={16}/></div><div><strong>{title}</strong><span>{desc}</span></div><b className="pill muted">Planned</b></div>)}</article></section>
         <footer><span>MARKETPILOT AI <i>·</i> RESEARCH FIRST</span><span>Market data is illustrative until a licensed source is connected.</span></footer>
-        </> : active === "F&O Workbench" ? <FOWorkbench /> : active === "Opportunity Scanner" ? <OpportunityScanner /> : active === "Paper Portfolio" ? <PaperPortfolio /> : active === "Research Reports" ? <ResearchReports /> : active === "Academy" ? <Learn /> : active === "Backtest Lab" ? <BacktestLab /> : active === "Investment Hub" ? <InvestmentHub /> : active === "AI Copilot" ? <MarketPilotCopilot /> : active === "India Market Lab" ? <IndiaMarketLab /> : active === "Money Manager" ? <MoneyManager /> : active === "Strategy Lab" ? <StrategyLab /> : active === "Global Markets" ? <GlobalMarkets /> : <section className="panel coming-soon"><div className="chain-icon"><BookOpen size={22}/></div><h3>{active} workspace</h3><p>This module is in the next delivery milestone. No fabricated market data is shown here.</p><span className="pill muted">IN DEVELOPMENT</span></section>}
+        </> : active === "F&O Workbench" ? <FOWorkbench /> : active === "Opportunity Scanner" ? <OpportunityScanner /> : active === "Paper Portfolio" ? <PaperPortfolio /> : active === "Paper Trading Bot" ? <PaperTradingBot /> : active === "Research Reports" ? <ResearchReports /> : active === "Academy" ? <Learn /> : active === "Backtest Lab" ? <BacktestLab /> : active === "Investment Hub" ? <InvestmentHub /> : active === "AI Copilot" ? <MarketPilotCopilot /> : active === "India Market Lab" ? <IndiaMarketLab /> : active === "Money Manager" ? <MoneyManager /> : active === "Strategy Lab" ? <StrategyLab /> : active === "Global Markets" ? <GlobalMarkets /> : <section className="panel coming-soon"><div className="chain-icon"><BookOpen size={22}/></div><h3>{active} workspace</h3><p>This module is in the next delivery milestone. No fabricated market data is shown here.</p><span className="pill muted">IN DEVELOPMENT</span></section>}
       </div>
     </main>
   </div>;
