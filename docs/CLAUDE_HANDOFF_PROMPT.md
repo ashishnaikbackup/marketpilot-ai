@@ -1,76 +1,85 @@
 # Claude handoff prompt
 
-Copy the prompt below into Claude when you want a second AI engineer to review or continue MarketPilot AI. Keep Claude's work in this repository and ask it to inspect the current code before editing.
+Use this prompt when handing MarketPilot AI to Claude for an independent engineering review and the next implementation milestone. Claude must inspect the latest `main` branch first; this handoff describes the current state but the repository is authoritative.
 
 ---
 
 ## Prompt for Claude
 
-You are joining an existing software project named **MarketPilot AI** in the GitHub repository `ashishnaikbackup/marketpilot-ai`.
+You are the senior full-stack engineer and quantitative systems reviewer for **MarketPilot AI**:
+https://github.com/ashishnaikbackup/marketpilot-ai
 
-Your role is senior full-stack engineer, quantitative developer and cautious financial-data systems architect. First inspect the entire repository and current Git history. Do not assume the documentation is fully implemented. Compare the roadmap with the actual code, identify gaps, and propose a small, testable next milestone before making changes.
+The user wants a functional, research-first financial intelligence platform. India index F&O is the first priority. Your job is to continue the existing codebase carefully, not rebuild it from scratch.
 
-### Product goal
+### User/product constraints
 
-Build a polished, research-first financial intelligence platform with **Indian index F&O as the highest priority**, especially NIFTY 50, BANKNIFTY and FINNIFTY. Expand later to Indian equities, global indices/equities, FX, commodities, bonds, funds and macro research.
+- Beginner user, currently has no invested capital and wants to learn before investing.
+- Prefer free/open-source tooling and a usable browser dashboard.
+- They view progress directly on GitHub and want a core MVP before leaving a smaller review/extension task to Claude.
+- No broker account is required for the research, education or paper-trading MVP.
+- Do not encourage real-money F&O trading or imply guaranteed returns.
+- Keep MarketPilot AI independent from any other personal project/repository.
 
-The user wants a dashboard that prepares:
-- daily pre-market and closing research;
-- intraday context/alerts when reliable data is available;
-- weekly and monthly performance/research reports;
-- F&O option-chain analytics, OI/change in OI, volume, IV, Greeks, PCR, expiry context and volatility;
-- explainable opportunity candidates with bullish/bearish/neutral scenarios, hypothetical entry zone, target zones, invalidation, risk/reward and reasons;
-- explicit **NO TRADE** when data is missing, stale, illiquid or the setup is not sufficiently supported;
-- option strategy payoff, breakeven, maximum loss, scenario analysis and paper trading;
-- portfolio/risk tools and structured financial education.
+### Current implemented state — inspect before changing
 
-### Current implementation to verify
+**Frontend: React + TypeScript + Vite**
+- Premium dark dashboard and responsive sidebar navigation.
+- Overview page with sample index values explicitly marked DEMO; no live feed.
+- F&O Workbench: empty option-chain state (no fabricated chain) and browser-side European Black-Scholes calculator for theoretical price, Delta, Gamma, annual Theta and Vega per 1 vol point.
+- Opportunity Scanner: fail-closed local readiness result returning NO_TRADE because no authorised provider is configured.
+- Strategy Lab: editable multi-leg calls/puts, long/short positions, quantities, lot sizes, expiry P&L curve over a user-selected spot range, approximate breakeven crossings and risk caveats.
+- Paper Portfolio: browser-local journal with hypothetical entry, stop, target and manual exit; closed P&L is hypothetical, no broker orders.
+- Research Reports: browser-local structured bull/base/bear brief, invalidation/risk/source notes and Markdown export.
+- Global Markets: asset-class coverage map and browser-local watchlist, no live quotes.
+- Learn: beginner learning path.
+- Browser-local storage is not a cloud backup or multi-device account.
 
-- React + TypeScript + Vite frontend dashboard with dark premium interface.
-- Sidebar workspaces for Overview, F&O Workbench, Opportunity Scanner, Strategy Lab, Paper Portfolio, Research Reports, Global Markets and Learn.
-- Market snapshot values are intentionally labelled **DEMO** and are not live quotes.
-- Interactive single-leg option expiry calculator in the frontend.
-- FastAPI backend with health endpoint.
-- Deterministic Python option expiry payoff domain functions.
-- Multi-leg `POST /api/v1/options/expiry-payoff` API.
-- Pytest tests for payoff and API validation.
-- GitHub Actions CI workflow for backend tests/lint and frontend build.
-- Product roadmap, architecture and safety/compliance documents.
+**Backend: FastAPI**
+- Health endpoint.
+- Deterministic multi-leg option expiry payoff endpoint: `POST /api/v1/options/expiry-payoff`.
+- European Black-Scholes theoretical pricing/Greeks endpoint: `POST /api/v1/options/greeks`.
+- Market-data status endpoint explicitly reports no provider connected.
+- Research data-quality gate: `POST /api/v1/research/screen`, rejects demo, historical, stale, missing-timestamp, missing-source/exchange, incomplete and unvalidated inputs; default is NO_TRADE.
+- Provider-neutral normalized data contracts and async `MarketDataProvider` protocol in `backend/app/domain/market_data.py`; default `UnconfiguredMarketDataProvider` fails closed.
+- Pytest coverage for payoff, API validation, Greeks, research gates and unconfigured provider.
 
-Check whether all these files exist and whether the code builds. Do not claim tests passed unless you run them or verify GitHub Actions results.
+**Delivery**
+- CI workflow `.github/workflows/ci.yml` checks backend Ruff + pytest and frontend TypeScript/Vite production build.
+- Frontend GitHub Pages workflow `.github/workflows/deploy-pages.yml`.
+- Vite base path configured for `/marketpilot-ai/`.
+- Current static site: https://ashishnaikbackup.github.io/marketpilot-ai/
+- Latest confirmed CI run passed at commit `5c801872b6a09412174f74e77c97ffb5ff8f8e26`.
+- GitHub Pages deployment succeeded for the frontend at commit `3d455e02900e5608b21a9ea0e10935bec13766f4`; later commits after that deployment were documentation-only. Re-run deployment after any frontend change.
+- Read `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/SAFETY_AND_COMPLIANCE.md`, `docs/MARKET_DATA_PROVIDER.md` and `docs/OPTIONS_MODELS.md`.
 
-### Non-negotiable engineering requirements
+### Highest-priority remaining work
 
-1. No fabricated live prices, option chains, OI, Greeks or market signals.
-2. Every market-data object must carry source/provider, observation timestamp, received timestamp, exchange, instrument identity and data mode (`live`, `delayed`, `eod`, `historical`, `demo`).
-3. Clearly mark stale or missing data; prevent the scanner from producing a candidate if data quality gates fail.
-4. Keep quantitative calculations deterministic and unit-tested. LLMs may explain validated data but must not invent or be authoritative for calculations.
-5. Separate expiry payoff from live mark-to-market P&L. Display assumptions, lot size, expiry, brokerage/taxes, slippage and liquidity limitations.
-6. Do not present options as safe or guaranteed. Highlight short-option tail risk and avoid framing naked short options as beginner-friendly.
-7. Do not build unattended real-money execution. Paper trading first. Any future broker API/execution work requires a fresh legal/compliance/security review and applicable exchange/broker approval.
-8. Use exchange-authorised or contractually permitted market data. Do not scrape protected endpoints or bypass rate limits.
-9. Store secrets only in backend environment variables/secret managers. Never commit API keys or broker credentials.
-10. Use small changes, clear tests, type-safe interfaces, documented assumptions and accessible responsive UI.
+1. Inspect current `main`, reproduce builds/tests, verify GitHub Pages deployment and fix any regression.
+2. Add a real provider adapter only after selecting a provider with documented API access, entitlements, display/redistribution rights, cost and rate limits. Until then, keep all quote/chain panels explicitly unavailable.
+3. Build the normalized option-chain API and UI for NIFTY/BANKNIFTY/FINNIFTY with source, exchange, instrument ID, observation/receive timestamps, mode, freshness and missing-field indicators.
+4. Add instrument master, exchange calendar, expiry/lot-size versioning and historical/replay boundaries.
+5. Improve analytics: PCR, OI/change-in-OI distributions, IV solver/context, ATM/ITM/OTM, max pain only as descriptive context, and expiry comparisons. Keep deterministic calculations in tested code; state model assumptions and limitations.
+6. Improve scanner from a simple readiness gate to a transparent rules engine with bull/base/bear evidence, invalidation, risk/reward and explicit NO_TRADE. Never invent entry, target, probability or signal.
+7. Upgrade paper portfolio from browser-local journal to a tested paper ledger with virtual cash, position lifecycle, fees/slippage assumptions, realised/unrealised P&L, drawdown and audit history. No real broker execution.
+8. Build scheduled pre-market, intraday, closing, weekly and monthly reports only after reliable data and scheduler/notification infrastructure exist.
+9. Add provider-neutral OpenAI and Anthropic adapters server-side with structured schema validation, source citations, prompt versioning, timeouts/retries, token/cost logging and safe fallbacks. LLMs explain validated data; they do not calculate authoritative Greeks/P&L or fabricate quotes.
+10. Production backend deployment, auth/account isolation, secrets, observability, backups and security review.
 
-### AI provider requirement
+### Non-negotiable rules
 
-Design a provider-neutral server-side interface that can support **OpenAI and Anthropic Claude**. Claude should be an additional provider, not a frontend-only integration. API keys must remain server-side. Add structured output validation, citation/source references, prompt versioning, model metadata, retry/timeouts, usage/cost logging and safe fallbacks. Do not call an LLM for deterministic option payoff calculations.
+- Never fabricate live/delayed/EOD prices, option-chain values, OI, IV, Greeks or signals.
+- Distinguish `live`, `delayed`, `eod`, `historical`, `demo`, `modelled_assumptions` and `unavailable`.
+- Preserve provider, exchange, instrument identity, observed_at and received_at timestamps with timezone.
+- Do not scrape protected exchange endpoints or bypass rate limits.
+- Keep expiry payoff separate from mark-to-market, margin and transaction costs.
+- Do not present Black-Scholes European model output as exchange Greeks or an authoritative valuation for American-style index options.
+- PCR, OI and max pain are descriptive context, not standalone directional signals.
+- No unattended live orders. Any future execution requires separate legal, exchange, broker, security and regulatory review.
+- Never place secrets in frontend bundles or Git.
+- Use small, reversible commits, tests, accessible responsive UI and update the roadmap accurately.
 
-### Suggested next priorities
+### How to work
 
-1. Inspect and run backend tests and frontend production build; repair failures.
-2. Define normalized market data contracts and instrument/expiry metadata.
-3. Implement a provider adapter boundary and a demo provider that is unmistakably marked demo.
-4. Build the India index/F&O workbench with a real option-chain schema but no fake live data.
-5. Implement validated Greeks/IV and option-chain analytics with documented assumptions and tests.
-6. Build a rule-based opportunity scanner with data-quality gates, explainable evidence and NO TRADE.
-7. Add historical data storage/replay and paper-trading lifecycle.
-8. Add scheduled daily/weekly/monthly report generation.
-9. Add OpenAI and Claude adapters after the report/data contracts are stable.
-10. Expand to global markets after the India F&O workflow is reliable.
+First provide a short gap assessment based on actual code and latest CI. Then implement the next bounded milestone end-to-end, add tests, update docs and deploy the frontend if changed. Verify the exact final commit and CI. Do not claim a feature is complete merely because a placeholder renders. Do not overwrite working code without a clear reason.
 
-### Delivery style
-
-Before editing, report what is implemented, what is broken and the next bounded milestone. Then implement that milestone fully, add tests, update documentation and summarize exact changed files and verification results. Do not rewrite the entire application or replace working code without reason. Do not claim the whole product is finished while roadmap items remain.
-
-Repository: https://github.com/ashishnaikbackup/marketpilot-ai
+The repository is the source of truth; this prompt can become stale.
