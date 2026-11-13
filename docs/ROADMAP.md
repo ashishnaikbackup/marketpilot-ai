@@ -14,8 +14,8 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 ### Milestone 1 — Data foundation
 - [x] Explicit unavailable-provider status endpoint
 - [x] Conservative freshness/provenance/required-field gate with NO_TRADE fallback
-- [ ] Provider interface for quotes, candles, instruments, expiries and option chains
-- [ ] Data provenance, exchange timezone, timestamp and freshness metadata
+- [x] Provider-neutral quote and option-chain adapter contracts (no provider connected yet)
+- [x] Normalized provenance fields for provider, exchange, instrument and timestamps (adapter enforcement remains)
 - [ ] Market calendar and instrument master with expiry/lot-size versioning
 - [ ] Historical data storage and replay
 - [ ] Provider terms, entitlement and redistribution review
@@ -27,11 +27,11 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] News and official-event calendar with source links
 
 ### Milestone 3 — F&O workbench (highest product priority)
-- [ ] Option-chain table with strike, CE/PE LTP, volume, OI and change in OI
+- [ ] Live option-chain table with strike, CE/PE LTP, volume, OI and change in OI (UI empty state is ready)
 - [x] Initial European Black-Scholes price and Greeks calculator with documented assumptions (not an IV solver or market quote)
 - [ ] PCR, OI concentration and expiry comparisons
 - [ ] ATM/ITM/OTM identification and strike/expiry filters
-- [ ] Defined-risk strategy builder and payoff chart
+- [x] Single-leg expiry payoff calculator; [ ] defined-risk multi-leg strategy builder and payoff chart
 - [ ] Max loss, max profit, breakeven, margin caveats and scenario shocks
 - [ ] Historical volatility and IV context
 - [ ] Explicit stale/missing-data states
@@ -52,7 +52,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Model comparison and token/cost observability
 
 ### Milestone 6 — Portfolio and paper trading
-- [ ] Virtual cash, positions and order lifecycle
+- [x] Browser-local paper trade journal with manual entry/exit and closed P&L; [ ] virtual cash, positions and full order lifecycle
 - [ ] Trade journal and strategy tags
 - [ ] P&L, drawdown, exposure and risk limits
 - [ ] Replay and paper-trade evaluation
