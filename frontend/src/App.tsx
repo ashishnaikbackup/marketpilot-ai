@@ -16,12 +16,12 @@ import {
   Wallet, X,
 } from "lucide-react";
 
-type Tab = "Overview" | "F&O Workbench" | "Opportunity Scanner" | "Strategy Lab" | "Paper Portfolio" | "Research Reports" | "Global Markets" | "Learn" | "Backtest Lab" | "Investment Hub";
+type Tab = "Overview" | "F&O Workbench" | "Opportunity Scanner" | "Strategy Lab" | "Paper Portfolio" | "Research Reports" | "Global Markets" | "Academy" | "Backtest Lab" | "Investment Hub";
 const nav: { label: Tab; icon: typeof LayoutDashboard }[] = [
   { label: "Overview", icon: LayoutDashboard }, { label: "F&O Workbench", icon: BarChart3 },
   { label: "Opportunity Scanner", icon: Target }, { label: "Strategy Lab", icon: SlidersHorizontal },
   { label: "Paper Portfolio", icon: Wallet }, { label: "Research Reports", icon: CalendarDays },
-  { label: "Global Markets", icon: Globe2 }, { label: "Investment Hub", icon: Wallet }, { label: "Backtest Lab", icon: Activity }, { label: "Learn", icon: BookOpen },
+  { label: "Global Markets", icon: Globe2 }, { label: "Investment Hub", icon: Wallet }, { label: "Backtest Lab", icon: Activity }, { label: "Academy", icon: BookOpen },
 ];
 const demoMarkets = [
   { name: "NIFTY 50", value: "24,850.00", change: "+0.42%", up: true },
