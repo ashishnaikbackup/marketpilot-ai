@@ -30,7 +30,8 @@ Each instrument:
 - symbol: unique canonical symbol
 - asset_class: EQUITY, ETF, INDEX or FUTURE. INDEX instruments are signal-only and are not purchased directly.
 - candles: at least 55 daily close bars in chronological order, e.g. [{ "timestamp":"2026-08-01T00:00:00Z", "close":123.45 }]
-- quote: { "bid":123.4, "ask":123.5, "timestamp":"2026-11-13T10:19:58Z" }\n- for FUTURE only: instrument_id, expiry (YYYY-MM-DD), and lot_size from the current contract master
+- quote: { "bid":123.4, "ask":123.5, "timestamp":"2026-11-13T10:19:58Z" }
+- for FUTURE only: instrument_id, expiry (YYYY-MM-DD), and lot_size from the current contract master
 
 Each option contract:
 - contract_id, symbol, underlying
