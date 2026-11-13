@@ -68,7 +68,7 @@ test("AI chat uses the server-side research guardrails and returns model output"
   });
   let modelName = "";
   let sentMessages = [];
-  const response = await app.fetch(request, {AI:{run:async(model,payload)=>{modelName=model;sentMessages=payload.messages;return {response:"PCR is descriptive, not a standalone signal."};}}});
+  const response = await app.fetch(request, {AI_CHAT_ENABLED:"true",AI:{run:async(model,payload)=>{modelName=model;sentMessages=payload.messages;return {response:"PCR is descriptive, not a standalone signal."};}}});
   const result=await response.json();
   assert.equal(response.status,200);
   assert.equal(modelName,"@cf/google/gemma-4-26b-a4b-it");
