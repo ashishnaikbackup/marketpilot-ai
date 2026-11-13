@@ -79,7 +79,7 @@ async function run(snapshot,env,trigger="manual"){
 }
 export async function paperBotRoute(request,env,url){
  const path=url.pathname;
- if(request.method==="GET"&&path==="/api/v1/paper-bot/status")return json({configured:Boolean(env?.DB),feed_configured:Boolean(env.MARKET_DATA_SNAPSHOT_URL),mode:"paper_only",strategy_version:"trend-options-v1",schedule_utc:["10:20 UTC weekdays — India closing scan","22:30 UTC weekdays — global closing scan"],message:!env.DB?"D1 database is not configured.":!env.MARKET_DATA_SNAPSHOT_URL?"Normalized licensed market-data adapter is not configured.":"Bot services are configured; verify provider entitlements and data quality."});
+ if(request.method==="GET"&&path==="/api/v1/paper-bot/status")return json({configured:Boolean(env?.DB),feed_configured:Boolean(env?.MARKET_DATA_SNAPSHOT_URL),mode:"paper_only",strategy_version:"trend-options-v1",schedule_utc:["10:20 UTC weekdays — India closing scan","22:30 UTC weekdays — global closing scan"],message:!env?.DB?"D1 database is not configured.":!env?.MARKET_DATA_SNAPSHOT_URL?"Normalized licensed market-data adapter is not configured.":"Bot services are configured; verify provider entitlements and data quality."});
  if(request.method==="GET"&&path==="/api/v1/paper-bot/positions"){
   if(!env?.DB)return error("D1 database is not configured.",503);
   if(!env.BOT_READ_TOKEN)return error("Paper bot read access is disabled until BOT_READ_TOKEN is configured.",503);
@@ -102,7 +102,7 @@ export async function paperBotRoute(request,env,url){
  return null;
 }
 export async function scheduledPaperBot(event,env){
- if(!env.DB||!env.MARKET_DATA_SNAPSHOT_URL)return;
+ if(!env?.DB||!env?.MARKET_DATA_SNAPSHOT_URL)return;
  const region=new Date(event.scheduledTime).getUTCHours()===10?"INDIA":"GLOBAL";
  try{
   const u=new URL(env.MARKET_DATA_SNAPSHOT_URL);u.searchParams.set("region",region);u.searchParams.set("purpose","paper-trading-eod");
