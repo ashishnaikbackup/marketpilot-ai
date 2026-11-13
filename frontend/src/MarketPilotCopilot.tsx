@@ -12,7 +12,7 @@ const starters = [
 
 function answerFor(question: string): Message {
   const q = question.toLowerCase();
-  if (/nifty|banknifty|finnifty|trade|buy|sell|entry|call|put|ce|pe|signal|setup/.test(q)) {
+  if (/nifty|banknifty|finnifty|buy|sell|entry|call|put|ce|pe|signal|setup/.test(q)) {
     return { role: "assistant", title: "Market setup review · data gate", text: "I can help build and evaluate a trade plan, but I cannot honestly name a live CE/PE strike or entry right now: this workspace has no connected, authorised live NSE feed. The dashboard's sample values are demo data.\n\nFor a defensible setup, provide a timestamped underlying price series and option-chain snapshot with source, expiry, strike, CE/PE LTP, bid/ask, volume, OI, change in OI and IV. The analysis should then check:\n\n1. **Market regime:** trend, opening range, VWAP, breadth and India VIX.\n2. **Option selection:** expiry, ATM distance, spread, liquidity, IV and Greeks—not premium alone.\n3. **Trigger:** a pre-defined price level plus confirmation; no chasing.\n4. **Risk:** entry, invalidation/stop, target, lot size, fees, slippage and maximum rupee loss.\n5. **Decision:** bullish, bearish, neutral or **NO TRADE**.\n\nUntil verified data is connected, the correct live-trading answer is **NO TRADE**. I can still teach the method or analyse data you paste here." };
   }
   if (/greek|delta|gamma|theta|vega|iv|implied volatility/.test(q)) {
