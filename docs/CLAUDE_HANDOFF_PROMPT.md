@@ -32,6 +32,7 @@ The user wants a functional, research-first financial intelligence platform. Ind
 - Research Reports: browser-local structured bull/base/bear brief, invalidation/risk/source notes and Markdown export.
 - Global Markets: asset-class coverage map and browser-local watchlist, no live quotes.
 - Learn: beginner learning path.
+- Backtest Lab: interactive UI accepting chronological user-supplied closing prices and calling the SMA crossover API; requires a separately deployed API URL.
 - Browser-local storage is not a cloud backup or multi-device account.
 
 **Backend: FastAPI**
