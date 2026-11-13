@@ -19,7 +19,7 @@ def test_long_call_expiry_profit() -> None:
 
 def test_long_put_expiry_profit() -> None:
     position = OptionPosition(OptionSide.PUT, quantity=2, strike=100, premium=5, lot_size=10)
-    assert position_expiry_pnl(position, 80) == 200
+    assert position_expiry_pnl(position, 80) == 300
     assert breakeven(position) == 95
 
 
