@@ -10,9 +10,9 @@ enabled = true
 binding = "AI"
 remote = true
 
-# Scheduled EOD paper scans: India close + 20 minutes; global close + buffer.
+# Poll every 5 minutes on weekdays. Worker gates India to its session and global scans to 15-minute intervals; it writes EOD summaries after each region's close.
 [triggers]
-crons = ["20 10 * * 1-5", "30 22 * * 1-5"]
+crons = ["*/5 * * * 1-5"]
 
 # Add a D1 binding named DB after creating the database in Cloudflare.
 # Keep the database ID in Cloudflare config/secrets, never in frontend source.
