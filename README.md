@@ -64,7 +64,7 @@ The frontend reads `VITE_API_BASE_URL` (default `http://localhost:8000/api/v1`).
 
 ## First implemented API
 
-The options expiry-payoff endpoint accepts multiple call/put legs and returns a spot-versus-gross-expiry-P&L curve. The Greeks endpoint calculates European Black-Scholes theoretical price, delta, gamma, annual theta and vega from user-supplied assumptions. A separate research gate rejects demo, stale, incomplete or unprovenanced data with NO_TRADE. These calculations do not include exchange quotes, fees, slippage, margin or a trade recommendation. See the OpenAPI docs and model notes for details.
+The React dashboard now includes an India F&O workbench (with a modelled Greeks calculator), a research readiness scanner, and a browser-local paper journal. The backend exposes provider-neutral quote/option-chain contracts but intentionally ships with no connected provider. The options expiry-payoff endpoint accepts multiple call/put legs and returns a spot-versus-gross-expiry-P&L curve. The Greeks endpoint calculates European Black-Scholes theoretical price, delta, gamma, annual theta and vega from user-supplied assumptions. A separate research gate rejects demo, stale, incomplete or unprovenanced data with NO_TRADE. These calculations do not include exchange quotes, fees, slippage, margin or a trade recommendation. See the OpenAPI docs, [model notes](docs/OPTIONS_MODELS.md), and [provider contract](docs/MARKET_DATA_PROVIDER.md) for details.
 
 ## Configuration
 
