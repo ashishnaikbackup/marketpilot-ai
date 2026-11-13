@@ -45,7 +45,7 @@ The user wants a functional, research-first financial intelligence platform. Ind
 - Bootstrap instrument catalogue with lot sizes and expiry calendars deliberately unset pending a verified instrument master.
 - Research candidate review gate requiring live/delayed freshness, provenance, at least two evidence points, invalidation, risk notes and reviewed rule ID; output is never a trade recommendation.
 - Educational SMA crossover backtest endpoint using supplied close series, fee/slippage assumptions and max drawdown.
-- Optional server-side OpenAI and Anthropic explainer endpoint with secret checks, timeout handling and no client-side API keys.
+- Optional server-side OpenAI and Anthropic explainer endpoint with a separate API-key gate, secret checks, timeout handling and no client-side API keys.
 - Pytest coverage for payoff, API validation, Greeks, research gates and unconfigured provider.
 
 **Delivery**
