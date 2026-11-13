@@ -8,8 +8,8 @@ const KEY="marketpilot-paperbot-api-v1";
 const money=(n:number,c:string)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:c,maximumFractionDigits:2}).format(n);
 export default function AutoPaperTrader(){
  const [api,setApi]=useState(()=>localStorage.getItem(KEY)||"");
- const [readToken,setReadToken]=useState(()=>localStorage.getItem(KEY+"-read-token")||"");
- const [draft,setDraft]=useState(api),[draftToken,setDraftToken]=useState(readToken),[status,setStatus]=useState<Status|null>(null),[positions,setPositions]=useState<Position[]>([]),[reports,setReports]=useState<Report[]>([]),[loading,setLoading]=useState(false),[error,setError]=useState(""),[updated,setUpdated]=useState("");
+ const [readToken,setReadToken]=useState(()=>sessionStorage.getItem(KEY+"-read-token")||"");
+ const [draft,setDraft]=useState(api),[status,setStatus]=useState<Status|null>(null),[positions,setPositions]=useState<Position[]>([]),[reports,setReports]=useState<Report[]>([]),[loading,setLoading]=useState(false),[error,setError]=useState(""),[updated,setUpdated]=useState("");
  const refresh=useCallback(async()=>{
   const base=api.trim().replace(/\/+$/,"");if(!base){setError("Add your deployed Cloudflare Worker API URL.");return;}
   setLoading(true);setError("");
@@ -18,7 +18,7 @@ export default function AutoPaperTrader(){
    const s=await results[0].json();if(!results[0].ok)throw new Error(s.detail||"Unable to read status.");setStatus(s);
    if(results[1].ok)setPositions((await results[1].json()).positions||[]);else setPositions([]);
    if(results[2].ok)setReports((await results[2].json()).reports||[]);else setReports([]);
-   setUpdated(new Date().toLocaleString());if(!results[1].ok||!results[2].ok)setError("Worker is reachable, but D1 storage is not ready.");
+   setUpdated(new Date().toLocaleString());if(!results[1].ok||!results[2].ok)setError(results[1].status===401||results[2].status===401?"Paper bot read token is missing or incorrect.":"Worker is reachable, but D1 storage is not ready or the read token is not configured.");
   }catch(e){setStatus(null);setPositions([]);setReports([]);setError(e instanceof Error?e.message:"Could not connect to API.");}
   finally{setLoading(false);}
  },[api,readToken]);
@@ -28,7 +28,7 @@ export default function AutoPaperTrader(){
  return <div className="page-stack">
   <div className="notice"><ShieldCheck size={17}/><div><strong>Autonomous paper trader · virtual money only</strong><span>It scans, simulates entries/exits and writes reports. It never connects to a broker or places real orders. Live operation requires a licensed data adapter and Cloudflare D1.</span></div><span className="notice-tag">PAPER ONLY</span></div>
   <section className="panel paperbot-connect"><div className="panel-title"><div><h3>Connect the paper-trading service</h3><p>Cloudflare Worker URL and your separate paper-bot read token. Never enter broker passwords or provider API keys here.</p></div><Bot size={19} className="muted-icon"/></div>
-   <div className="scanner-form"><label>MarketPilot API base URL<input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="https://marketpilot-api.your-subdomain.workers.dev"/></label><label>Paper bot read token<input type="password" value={readToken} onChange={e=>{setReadToken(e.target.value);sessionStorage.setItem("marketpilot-paperbot-read-token",e.target.value);}} placeholder="Worker BOT_READ_TOKEN secret"/></label><button className="primary-button" onClick={()=>{const v=draft.trim().replace(/\/+$/,"");setApi(v);localStorage.setItem(KEY,v);}} disabled={!draft.trim()}>Save & connect</button><button className="outline-button" onClick={()=>void refresh()} disabled={loading}><RefreshCw size={14}/> {loading?"Checking…":"Refresh"}</button></div>
+   <div className="scanner-form"><label>MarketPilot API base URL<input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="https://marketpilot-api.your-subdomain.workers.dev"/></label><label>Paper bot read token<input type="password" value={readToken} onChange={e=>{setReadToken(e.target.value);sessionStorage.setItem(KEY+"-read-token",e.target.value);}} placeholder="Worker BOT_READ_TOKEN secret"/></label><button className="primary-button" onClick={()=>{const v=draft.trim().replace(/\/+$/,"");setApi(v);localStorage.setItem(KEY,v);}} disabled={!draft.trim()}>Save & connect</button><button className="outline-button" onClick={()=>void refresh()} disabled={loading}><RefreshCw size={14}/> {loading?"Checking…":"Refresh"}</button></div>
    {error&&<p className="error-text">{error}</p>}{updated&&<p className="disclaimer-small">Last checked: {updated}</p>}<p className="disclaimer-small">The read token is a private app-access secret, not a broker credential. It is stored in this browser profile; do not share it or use a public/shared device.</p>
   </section>
   <section className="paperbot-status-grid">
