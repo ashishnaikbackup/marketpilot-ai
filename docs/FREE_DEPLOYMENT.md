@@ -25,6 +25,17 @@ No card or paid Render service is required for this architecture. Do not enable 
 
 
 
+## Deploying the API through GitHub Actions
+
+The repository includes `.github/workflows/deploy-api.yml`. After the one-time Cloudflare setup, you can let GitHub deploy future Worker changes automatically:
+
+1. In Cloudflare, create an API token with the permissions required to deploy Workers, and copy your Cloudflare account ID.
+2. In GitHub, open **Settings → Secrets and variables → Actions → New repository secret**.
+3. Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Never put either value in a source file or commit.
+4. Push a change under `cloudflare-worker/` to `main`, or run **Deploy MarketPilot API** from the Actions tab.
+
+If those secrets are not configured, the workflow safely skips deployment. GitHub Pages deployment remains separate and continues from the frontend workflow. This still requires a Cloudflare account for the API/AI runtime; GitHub stores the code and automates deployments.
+
 ## Optional AI Copilot (free allocation)
 
 The Worker includes `POST /api/v1/ai/chat`, using the Workers AI binding and the `@cf/google/gemma-4-26b-a4b-it` model. The model runs server-side; no AI key is exposed in the browser. The endpoint restricts message roles, message count and per-message length, and adds a fixed MarketPilot research policy that forbids fabricated quotes and unsupported CE/PE calls.
