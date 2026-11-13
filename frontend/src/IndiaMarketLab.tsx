@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Database, FileText, ShieldCheck, Upload, AlertTriangle, Activity } from "lucide-react";
 
 type ChainRow = { strike:number; option_type:"CE"|"PE"; open_interest:number; change_oi:number; volume:number; ltp:number; iv:number; bid:number; ask:number };
-type Snapshot = { instrument:string; source:string; observedAt:string; importedAt:string; rows:ChainRow[]; metrics:{pcr:number|null;pcrChange:number|null;maxPain:number;topCall:number;topPut:number;atm:number;atmDistance:number;callIv:number|null;putIv:number|null;spreadPct:number|null}; disclaimer:string };
+type Snapshot = { instrument:string; expiry:string; source:string; observedAt:string; importedAt:string; rows:ChainRow[]; metrics:{pcr:number|null;pcrChange:number|null;maxPain:number;topCall:number;topPut:number;atm:number;atmDistance:number;callIv:number|null;putIv:number|null;spreadPct:number|null}; disclaimer:string };
 const STORAGE_KEY="marketpilot.latestIndiaChain.v1";
 const SAMPLE="strike,option_type,open_interest,change_oi,volume,ltp,iv,bid,ask\n25000,CE,120000,15000,45000,185,14.2,184.5,185.5\n25000,PE,135000,22000,51000,172,14.8,171.5,172.5\n25100,CE,155000,18000,62000,132,14.5,131.5,132.5\n25100,PE,110000,-8000,39000,214,15.1,213.5,214.5\n25200,CE,210000,35000,78000,91,15.0,90.5,91.5\n25200,PE,90000,-12000,28000,270,15.6,269.5,270.5";
 function parseCsv(input:string):ChainRow[]{
@@ -29,17 +29,17 @@ function analyse(rows:ChainRow[],spot:number){
  return {pcr:callOI?putOI/callOI:null,pcrChange:callChange?putChange/callChange:null,maxPain,topCall:top("CE"),topPut:top("PE"),atm,atmDistance:atm-spot,callIv:iv("CE"),putIv:iv("PE"),spreadPct:spreads.length?spreads.reduce((a,b)=>a+b,0)/spreads.length:null};
 }
 export default function IndiaMarketLab(){
- const [instrument,setInstrument]=useState("NIFTY");const [spot,setSpot]=useState("25000");const [source,setSource]=useState("");const [observedAt,setObservedAt]=useState("");const [csv,setCsv]=useState("");const [snapshot,setSnapshot]=useState<Snapshot|null>(null);const [error,setError]=useState("");
+ const [instrument,setInstrument]=useState("NIFTY");const [spot,setSpot]=useState("25000");const [source,setSource]=useState("");const [expiry,setExpiry]=useState("");const [observedAt,setObservedAt]=useState("");const [csv,setCsv]=useState("");const [snapshot,setSnapshot]=useState<Snapshot|null>(null);const [error,setError]=useState("");
  const freshness=useMemo(()=>{if(!observedAt)return null;const age=Date.now()-new Date(observedAt).getTime();return Number.isFinite(age)?Math.round(age/60000):null;},[observedAt]);
- function importChain(){setError("");setSnapshot(null);try{if(!source.trim())throw Error("Enter where this option-chain data came from.");if(!observedAt||!Number.isFinite(new Date(observedAt).getTime()))throw Error("Enter the observation date and time.");const rows=parseCsv(csv);const metrics=analyse(rows,Number(spot));const item:Snapshot={instrument,source:source.trim(),observedAt,importedAt:new Date().toISOString(),rows,metrics,disclaimer:"User-supplied snapshot. Source, timestamp, exchange contract mapping and accuracy are not independently verified. Metrics are descriptive only, not a trade signal."};setSnapshot(item);localStorage.setItem(STORAGE_KEY,JSON.stringify(item));}catch(e){setError(e instanceof Error?e.message:"Unable to import this option chain.");}}
- function loadDemo(){setCsv(SAMPLE);setSource("Illustrative example only");setObservedAt(new Date().toISOString());setSpot("25120");setError("");setSnapshot(null);}
+ function importChain(){setError("");setSnapshot(null);try{if(!source.trim())throw Error("Enter where this option-chain data came from.");if(!expiry)throw Error("Select the option expiry date.");if(!observedAt||!Number.isFinite(new Date(observedAt).getTime()))throw Error("Enter the observation date and time.");const rows=parseCsv(csv);const metrics=analyse(rows,Number(spot));const item:Snapshot={instrument,expiry,source:source.trim(),observedAt,importedAt:new Date().toISOString(),rows,metrics,disclaimer:"User-supplied snapshot. Source, timestamp, exchange contract mapping and accuracy are not independently verified. Metrics are descriptive only, not a trade signal."};setSnapshot(item);localStorage.setItem(STORAGE_KEY,JSON.stringify(item));}catch(e){setError(e instanceof Error?e.message:"Unable to import this option chain.");}}
+ function loadDemo(){setCsv(SAMPLE);setSource("Illustrative example only");setExpiry(new Date().toISOString().slice(0,10));setObservedAt(new Date().toISOString());setSpot("25120");setError("");setSnapshot(null);}
  return <div className="page-stack">
   <div className="notice"><ShieldCheck size={17}/><div><strong>India derivatives research · user-supplied data</strong><span>Import an option-chain CSV to calculate positioning metrics. No live exchange connection or trading recommendation is implied.</span></div><span className="notice-tag">RESEARCH</span></div>
   <section className="panel"><div className="panel-title"><div><h3>Option-chain data importer</h3><p>NIFTY · BANKNIFTY · FINNIFTY · paste CSV from a source you are authorised to use</p></div><Upload size={18} className="muted-icon"/></div>
    <div className="calculator-fields">
     <label>Instrument<select value={instrument} onChange={e=>setInstrument(e.target.value)}><option>NIFTY</option><option>BANKNIFTY</option><option>FINNIFTY</option></select></label>
     <label>Underlying spot<input type="number" min="0.01" value={spot} onChange={e=>setSpot(e.target.value)}/></label>
-    <label>Data source / provider<input value={source} onChange={e=>setSource(e.target.value)} placeholder="Name the source"/></label>
+    <label>Expiry date<input type="date" value={expiry} onChange={e=>setExpiry(e.target.value)}/></label>\n    <label>Data source / provider<input value={source} onChange={e=>setSource(e.target.value)} placeholder="Name the source"/></label>
     <label>Observation time<input type="datetime-local" value={observedAt} onChange={e=>setObservedAt(e.target.value)}/></label>
    </div>
    <label className="india-csv-label">Option-chain CSV<textarea rows={9} value={csv} onChange={e=>setCsv(e.target.value)} placeholder="strike,option_type,open_interest,change_oi,volume,ltp,iv,bid,ask&#10;25000,CE,120000,15000,45000,185,14.2,184.5,185.5&#10;25000,PE,135000,22000,51000,172,14.8,171.5,172.5"/></label>
@@ -47,7 +47,7 @@ export default function IndiaMarketLab(){
    {error&&<p className="error-text">{error}</p>}
    <p className="disclaimer-small">Required columns: strike, option_type (CE/PE), open_interest, volume. Optional: change_oi, ltp, iv, bid, ask. One row per strike and option side. Do not paste credentials or account information.</p>
   </section>
-  {snapshot&&<><section className="panel"><div className="panel-title"><div><h3>{snapshot.instrument} positioning snapshot</h3><p>{snapshot.source} · observed {new Date(snapshot.observedAt).toLocaleString("en-IN")}</p></div><Activity size={18} className="muted-icon"/></div>
+  {snapshot&&<><section className="panel"><div className="panel-title"><div><h3>{snapshot.instrument} positioning snapshot</h3><p>Expiry {snapshot.expiry} · {snapshot.source} · observed {new Date(snapshot.observedAt).toLocaleString("en-IN")}</p></div><Activity size={18} className="muted-icon"/></div>
    <div className="greeks-result">
     <div><span>Put / Call OI ratio</span><strong>{snapshot.metrics.pcr===null?"—":snapshot.metrics.pcr.toFixed(3)}</strong></div>
     <div><span>Put / Call change OI</span><strong>{snapshot.metrics.pcrChange===null?"—":snapshot.metrics.pcrChange.toFixed(3)}</strong></div>
