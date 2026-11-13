@@ -55,8 +55,18 @@ test("option-chain analytics returns PCR, max pain and OI concentration", async 
   assert.equal(result.data_mode, "caller_supplied_unverified");
 });
 
-test("AI chat fails safely when Workers AI binding is not configured", async () => {
+test("AI chat is disabled by default until abuse controls are configured", async () => {
   const response = await call("/api/v1/ai/chat", {messages:[{role:"user",content:"Explain PCR"}]});
+  assert.equal(response.status,503);
+  assert.match((await response.json()).detail,/disabled by default/);
+});
+
+test("AI chat fails safely when enabled but Workers AI binding is missing", async () => {
+  const request = new Request("https://unit.test/api/v1/ai/chat", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({messages:[{role:"user",content:"Explain PCR"}]})
+  });
+  const response = await app.fetch(request, {AI_CHAT_ENABLED:"true"});
   assert.equal(response.status,503);
   assert.match((await response.json()).detail,/AI binding is not configured/);
 });
@@ -83,8 +93,13 @@ test("AI chat uses the server-side research guardrails and returns model output"
 test("AI status reports whether the Workers AI binding is configured", async () => {
   const absent = await app.fetch(new Request("https://unit.test/api/v1/ai/status"));
   assert.equal((await absent.json()).available, false);
-  const configured = await app.fetch(new Request("https://unit.test/api/v1/ai/status"), {AI:{run:async()=>({response:"ok"})}});
+  const configuredButDisabled = await app.fetch(new Request("https://unit.test/api/v1/ai/status"), {AI:{run:async()=>({response:"ok"})}});
+  const disabledResult = await configuredButDisabled.json();
+  assert.equal(disabledResult.available, false);
+  assert.equal(disabledResult.mode, "disabled_by_default");
+  const configured = await app.fetch(new Request("https://unit.test/api/v1/ai/status"), {AI_CHAT_ENABLED:"true",AI:{run:async()=>({response:"ok"})}});
   const result = await configured.json();
   assert.equal(result.available, true);
+  assert.equal(result.enabled, true);
   assert.equal(result.mode, "configured");
 });
