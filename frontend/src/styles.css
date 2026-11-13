@@ -207,3 +207,8 @@ footer{border-color:#e4ebe5;color:#8c9990}
 .data-table-wrap{width:100%;overflow-x:auto;margin-top:15px}
 .data-table-wrap .data-table{min-width:650px;width:100%}
 @media(max-width:600px){.india-actions{display:grid;grid-template-columns:1fr}.india-actions button{justify-content:center}.india-csv-label textarea{font-size:10px}}
+
+
+.india-file-label{display:grid;gap:7px;margin-top:14px;color:#68786d;font-size:10px;font-weight:650}
+.india-file-label input{width:100%;box-sizing:border-box;padding:10px;border:1px dashed #cbdccf;border-radius:9px;background:#f8fbf8;color:#63736a;font:10px Inter,sans-serif}
+.india-file-label input::file-selector-button{margin-right:10px;padding:7px 11px;border:1px solid #d5e5d9;border-radius:7px;background:#edf6ef;color:#187b43;font:600 10px Inter,sans-serif}
