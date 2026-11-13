@@ -220,3 +220,42 @@ footer{border-color:#e4ebe5;color:#8c9990}
 .copilot-connect-note{font-size:8px;line-height:1.55;color:#89958d;margin:9px 0 0}
 .copilot-error{margin:0 15px 12px;padding:9px 11px;border:1px solid #f0d5d5;border-radius:8px;background:#fff5f5;color:#a34f4f;font-size:9px;line-height:1.5}
 .copilot-spinner{font-size:18px;line-height:1}
+
+
+/* Personal finance / Money Manager */
+.money-toolbar{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.money-toolbar label{display:grid;gap:5px;color:#68786d;font-size:10px;font-weight:650}
+.money-toolbar input{height:34px;padding:0 9px;border:1px solid #dfe8e1;border-radius:8px;background:#fff;color:#24372a;font:11px Inter,sans-serif}
+.money-import{display:inline-flex!important;align-items:center;gap:7px;padding:9px 12px;border:1px solid #dfe8e1;border-radius:8px;color:#187b43!important;cursor:pointer}
+.money-import input{display:none}
+.money-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.health-score{display:flex;align-items:center;gap:13px;padding:14px 0}
+.health-score>strong{font-size:36px;letter-spacing:-1.8px;color:#187b43}
+.health-score>strong small{font-size:13px;color:#87938a;letter-spacing:0}
+.health-score>div{display:grid;gap:4px}
+.health-score>div b{font-size:11px;color:#24372a}
+.health-score>div span{font-size:9px;color:#87938a;line-height:1.5}
+.health-bars{display:grid;gap:10px;padding-top:10px;border-top:1px solid #edf1ed}
+.health-bars>div{display:flex;justify-content:space-between;gap:10px;font-size:9px;color:#68786d}
+.health-bars b{font-size:9px}
+.health-bars .muted{color:#98a29b}
+.segmented-row{display:flex;gap:6px;margin:12px 0}
+.segmented-row button{padding:7px 13px;border:1px solid #e0e8e1;border-radius:7px;background:#fff;color:#68786d;font-size:10px}
+.segmented-row button.selected{border-color:#8dc5a0;background:#edf7ef;color:#187b43}
+.budget-list,.goal-list{display:grid;gap:13px;margin-top:15px}
+.budget-item,.goal-item{display:grid;gap:7px}
+.budget-item>div:first-child,.goal-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.budget-item strong,.goal-heading strong{font-size:10px;color:#35473a}
+.budget-item span,.goal-heading span,.goal-heading small{font-size:9px;color:#849087}
+.budget-track{height:7px;overflow:hidden;border-radius:99px;background:#edf1ed}
+.budget-track i{display:block;height:100%;border-radius:99px;background:#4aab6b}
+.budget-track i.over{background:#d66b62}
+.budget-meta{display:flex;justify-content:space-between;align-items:center;color:#849087;font-size:9px}
+.budget-meta button,.goal-heading button,.goal-contribute button{border:0;background:none;color:#718078;display:inline-flex;align-items:center;gap:4px;font-size:9px;cursor:pointer}
+.goal-contribute{display:flex;gap:6px}
+.goal-contribute input{min-width:0;flex:1;height:28px;padding:0 8px;border:1px solid #e0e8e1;border-radius:6px;font-size:9px}
+.goal-contribute button{padding:5px 7px;border:1px solid #e0e8e1;border-radius:6px}
+.spend-row{display:grid;grid-template-columns:95px 1fr 90px;align-items:center;gap:12px;margin:12px 0;font-size:10px;color:#68786d}
+.spend-row strong{text-align:right;color:#35473a;font-size:10px}
+.money-manager .empty-state{padding:17px 8px;color:#89958d;font-size:10px}
+@media(max-width:760px){.money-grid{grid-template-columns:1fr}.spend-row{grid-template-columns:80px 1fr 75px}.money-toolbar>*{flex:1}}
