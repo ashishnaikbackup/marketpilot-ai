@@ -59,7 +59,7 @@ The user wants a functional, research-first financial intelligence platform. Ind
 - Current static site: https://ashishnaikbackup.github.io/marketpilot-ai/
 - Latest verified code commit: `083d06fe0cc41665f459c2bb5bc75e6aa8e29397`.
 - CI passed at that commit: backend Ruff + pytest and frontend TypeScript/Vite production build. Run: https://github.com/ashishnaikbackup/marketpilot-ai/actions/runs/43392280179
-- GitHub Pages deployment for the expanded dashboard is queued/in progress; verify the latest `Deploy MarketPilot AI frontend to GitHub Pages` run before claiming the new UI is published.
+- GitHub Pages deployment succeeded for that code commit: https://github.com/ashishnaikbackup/marketpilot-ai/actions/runs/43392280203
 - Read `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/DEPLOYMENT.md`, `docs/SAFETY_AND_COMPLIANCE.md`, `docs/MARKET_DATA_PROVIDER.md` and `docs/OPTIONS_MODELS.md`.
 
 ### Highest-priority remaining work
