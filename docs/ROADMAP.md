@@ -48,7 +48,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [x] NO TRADE state and minimum data-quality gates (starter readiness gate only)
 - [ ] Backtesting with costs, slippage, survivorship and look-ahead controls
 
-- [x] Provider-neutral request surface with optional server-side OpenAI and Anthropic adapters, timeouts, no browser keys and explicit source verification status
+- [x] Provider-neutral request surface with optional server-side OpenAI and Anthropic adapters, API-key gate, timeouts, no browser keys and explicit source verification status
 - [ ] Structured JSON schema validation, prompt versioning, token/cost logging and retrieval citations
 
 ### Milestone 5 — AI analyst
