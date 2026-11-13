@@ -12,7 +12,6 @@ import InvestmentHub from "./InvestmentHub";
 import MoneyManager from "./MoneyManager";
 import MarketPilotCopilot from "./MarketPilotCopilot";
 import IndiaMarketLab from "./IndiaMarketLab";
-import MoneyManager from "./MoneyManager";
 import {
   Activity, ArrowDownRight, ArrowUpRight, BarChart3, Bell, BookOpen,
   CalendarDays, ChevronDown, CircleHelp, Compass, Globe2, LayoutDashboard,
