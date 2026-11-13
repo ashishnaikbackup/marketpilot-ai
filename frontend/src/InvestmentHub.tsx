@@ -13,7 +13,15 @@ const readStore = <T,>(key: string, fallback: T): T => {
 const id = () => globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random());
 
 export default function InvestmentHub() {
-  const [tab, setTab] = useState("Portfolio");
+  const [tab, setTab] = useState("Portfolio & P&L");
+  const [historyCsv, setHistoryCsv] = useState("");
+  const [tradeSide,setTradeSide]=useState("Long");
+  const [tradeEntry,setTradeEntry]=useState("100");
+  const [tradeStop,setTradeStop]=useState("95");
+  const [tradeTarget,setTradeTarget]=useState("110");
+  const [tradeCapital,setTradeCapital]=useState("100000");
+  const [tradeRisk,setTradeRisk]=useState("1");
+  const [tradeLot,setTradeLot]=useState("1");
   const [holdings, setHoldings] = useState<Holding[]>(() => readStore("mp-investment-holdings-v1", []));
   const [comparisons, setComparisons] = useState<Comparison[]>(() => readStore("mp-investment-comparisons-v1", [
     { id: "sample-a", symbol: "Add your asset", category: "Indian equity", expected: 0, volatility: 0, cost: 0, horizon: 5 }
