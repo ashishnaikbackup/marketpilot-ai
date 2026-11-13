@@ -48,6 +48,8 @@ The user wants a functional, research-first financial intelligence platform. Ind
 - Optional server-side OpenAI and Anthropic explainer endpoint with a separate API-key gate, secret checks, timeout handling and no client-side API keys.
 - Pytest coverage for payoff, API validation, Greeks, research gates and unconfigured provider.
 
+- Dockerfile at `backend/Dockerfile`, root `render.yaml` Blueprint and `docs/DEPLOYMENT.md` provide a deployable FastAPI service definition; no backend host has been provisioned.
+
 **Delivery**
 - CI workflow `.github/workflows/ci.yml` checks backend Ruff + pytest and frontend TypeScript/Vite production build.
 - Frontend GitHub Pages workflow `.github/workflows/deploy-pages.yml`.
