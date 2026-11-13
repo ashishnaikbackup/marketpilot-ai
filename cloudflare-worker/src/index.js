@@ -34,7 +34,7 @@ function sma(values, window) {
   for(let i=0;i<values.length;i++){sum+=values[i];if(i>=window)sum-=values[i-window];out.push(i>=window-1?sum/window:null);}
   return out;
 }
-async function route(request) {
+async function route(request, env) {
   const url=new URL(request.url), path=url.pathname;
   if(request.method==="OPTIONS") return new Response(null,{status:204,headers:cors});
   if(request.method==="GET" && (path==="/" || path==="/api/v1/health")) return json({status:"ok",service:"marketpilot-cloudflare-api",runtime:"cloudflare-workers",data_mode:"calculations_only"});
@@ -43,6 +43,30 @@ async function route(request) {
   if(request.method!=="POST") return error("Route not found.",404);
   const p=await body(request);
   try {
+    if(path==="/api/v1/ai/chat"){
+      if(!env?.AI?.run) return error("Workers AI binding is not configured. Add the AI binding named AI in Cloudflare Worker settings.",503);
+      if(!Array.isArray(p.messages)||!p.messages.length||p.messages.length>12) throw Error("Provide 1 to 12 chat messages.");
+      const messages=p.messages.map(m=>{
+        if(!m||!["user","assistant"].includes(m.role)||typeof m.content!=="string"||!m.content.trim()||m.content.length>4000) throw Error("Each message must have role user/assistant and 1 to 4000 characters.");
+        return {role:m.role,content:m.content};
+      });
+      const context=typeof p.context==="string"?p.context.slice(0,6000):"";
+      const system="You are MarketPilot AI, an educational Indian-market research assistant focused on NSE cash equities and NIFTY, BANKNIFTY and FINNIFTY derivatives. Be precise, explain your reasoning, separate observed data from assumptions, and teach the user. Never invent current prices, option strikes, expiries, lot sizes, quotes, OI, news or probabilities. The platform has no connected authorised live NSE feed. User-imported option-chain data is unverified and must be described as user-supplied, with its source and timestamp caveats. PCR, OI concentrations and max pain are descriptive context, not standalone directional predictors. Do not provide a direct buy/sell instruction or claim a best CE/PE entry. For a trade review, explain what evidence is missing and use NO TRADE if live, fresh, verified data and a tested rule are absent. Always discuss invalidation, position sizing, liquidity, fees, slippage and loss risk. No broker orders or execution. If asked for best time, distinguish historical time-of-day analysis from a live timing signal. Keep answers structured and practical for a learner.";
+      try {
+        const result=await env.AI.run("@cf/google/gemma-4-26b-a4b-it",{
+          messages:[{role:"system",content:system},...(context?[{role:"user",content:"Additional user-supplied context (unverified): "+context}]:[]),...messages],
+          max_tokens:900,
+          temperature:0.2,
+          stream:false,
+          chat_template_kwargs:{enable_thinking:false}
+        });
+        const answer=result?.response??result?.choices?.[0]?.message?.content??result?.output_text??"";
+        if(typeof answer!=="string"||!answer.trim()) throw Error("The model returned an empty response.");
+        return json({answer,model:"@cf/google/gemma-4-26b-a4b-it",provider:"cloudflare_workers_ai",data_mode:"user_context_only",disclaimer:"AI-generated educational research. Not live market data, a validated trading signal or investment advice."});
+      } catch(e) {
+        return error("AI request failed or free daily inference allowance is unavailable. No paid upgrade is enabled. "+(e instanceof Error?e.message:""),503);
+      }
+    }
     if(path==="/api/v1/options/greeks"){
       if(!["call","put"].includes(p.side)) throw Error("side must be call or put");
       const result=bs(p.side,p.spot,p.strike,p.years_to_expiry,p.risk_free_rate,p.volatility);
