@@ -15,9 +15,11 @@ Cloudflare's published Workers Free limits currently include 100,000 requests/da
 2. In the dashboard choose **Workers & Pages → Create → Worker**.
 3. Name it `marketpilot-api`.
 4. Open the Worker editor and replace its starter code with the contents of `cloudflare-worker/src/index.js`, then deploy.
-5. In **Worker → Settings → Bindings**, add a **Workers AI** binding named exactly `AI` (the repository's `wrangler.toml` also declares this binding for Wrangler deployments).\n6. Your API base URL will look like `https://marketpilot-api.<your-account-subdomain>.workers.dev`.
-6. Test `GET /api/v1/health`. It should return JSON with status `ok`.
-7. Open MarketPilot → Backtest Lab and paste that API base URL. The endpoint supports the SMA backtest. The other API routes are available for future frontend integration.
+5. In **Worker → Settings → Bindings**, add a **Workers AI** binding named exactly `AI` (the repository's `wrangler.toml` also declares this binding for Wrangler deployments).
+6. Your API base URL will look like `https://marketpilot-api.<your-account-subdomain>.workers.dev`.
+7. Test `GET /api/v1/health`. It should return JSON with status `ok`.
+8. Open MarketPilot → AI Copilot, paste the API base URL and save it. This enables `POST /api/v1/ai/chat` through the Workers AI binding. The selected Gemma model is intended for the Workers AI Free allowance; the published free allocation is 10,000 Neurons per day. On Workers Free, requests stop when the allowance is exceeded; do not upgrade to a paid plan.
+9. Open MarketPilot → Backtest Lab and paste the same API base URL to enable the SMA backtest.
 
 No card or paid Render service is required for this architecture. Do not enable paid Cloudflare Workers or paid add-ons unless you deliberately choose to.
 
