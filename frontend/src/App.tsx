@@ -13,7 +13,7 @@ import MoneyManager from "./MoneyManager";
 import MarketPilotCopilot from "./MarketPilotCopilot";
 import IndiaMarketLab from "./IndiaMarketLab";
 import {
-  Activity, ArrowDownRight, ArrowUpRight, BarChart3, Bell, BookOpen,
+  Activity, ArrowUpRight, BarChart3, Bell, BookOpen,
   CalendarDays, ChevronDown, CircleHelp, Compass, Globe2, LayoutDashboard,
   Menu, Search, ShieldCheck, SlidersHorizontal, Sparkles, Target, TrendingUp,
   Wallet, X, Bot,
