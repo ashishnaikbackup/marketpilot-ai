@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 
@@ -23,7 +23,7 @@ def test_demo_data_always_returns_no_trade() -> None:
 
 
 def test_stale_or_incomplete_data_returns_no_trade() -> None:
-    observed = (datetime.now(timezone.utc) - timedelta(minutes=20)).isoformat()
+    observed = (datetime.now(UTC) - timedelta(minutes=20)).isoformat()
     response = client.post(
         "/api/v1/research/screen",
         json={
@@ -43,7 +43,7 @@ def test_stale_or_incomplete_data_returns_no_trade() -> None:
 
 
 def test_complete_fresh_data_only_passes_readiness_gate() -> None:
-    observed = datetime.now(timezone.utc).isoformat()
+    observed = datetime.now(UTC).isoformat()
     fields = ["underlying_price", "option_chain", "open_interest", "implied_volatility"]
     response = client.post(
         "/api/v1/research/screen",
