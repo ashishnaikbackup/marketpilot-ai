@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BookOpen, GraduationCap, CheckCircle2, ChevronDown, Brain } from "lucide-react";
+import { BookOpen, GraduationCap, CheckCircle2, ChevronDown, Brain, ShieldCheck } from "lucide-react";
 
 type Lesson = { title: string; level: string; time: string; body: string[]; question: string; options: string[]; answer: number; explanation: string };
 const lessons: Lesson[] = [
