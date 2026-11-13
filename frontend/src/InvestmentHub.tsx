@@ -79,6 +79,14 @@ export default function InvestmentHub() {
     const points=prices.map((v,i)=>`${(i/(prices.length-1))*600},${150-((v-lo)/range)*135}`).join(" ");
     return {rows:parsed,last:prices[prices.length-1],total:(prices[prices.length-1]/prices[0]-1)*100,cagr,vol:Math.sqrt(variance*252)*100,drawdown:dd*100,rsi,sma20:sma(20),sma50:sma(50),points};
   },[historyCsv]);
+  const tradePlan = useMemo(() => {
+    const entry=Number(tradeEntry),stop=Number(tradeStop),target=Number(tradeTarget),capital=Number(tradeCapital),riskPct=Number(tradeRisk),lot=Math.max(1,Number(tradeLot)||1);
+    const riskPerUnit=tradeSide==="Long"?entry-stop:stop-entry;
+    const rewardPerUnit=tradeSide==="Long"?target-entry:entry-target;
+    const valid=entry>0&&stop>0&&target>0&&capital>0&&riskPct>0&&riskPct<=5&&riskPerUnit>0&&rewardPerUnit>0;
+    const maxRisk=capital*riskPct/100,units=valid?Math.floor(maxRisk/riskPerUnit/lot)*lot:0;
+    return {valid,riskPerUnit,rewardPerUnit,maxRisk,units,plannedLoss:units*riskPerUnit,plannedProfit:units*rewardPerUnit,rr:riskPerUnit>0?rewardPerUnit/riskPerUnit:0};
+  },[tradeSide,tradeEntry,tradeStop,tradeTarget,tradeCapital,tradeRisk,tradeLot]);
   const compareRank = useMemo(() => comparisons.filter(x => x.symbol !== "Add your asset").map(x => ({ ...x, net: x.expected - x.cost, score: x.volatility > 0 ? (x.expected - x.cost) / x.volatility : 0, future: 100000 * Math.pow(1 + (x.expected - x.cost) / 100, x.horizon) })).sort((a,b)=>b.score-a.score), [comparisons]);
 
   function addHolding() {
@@ -98,7 +106,7 @@ export default function InvestmentHub() {
     setThesis("");setCatalyst("");setRisk("");setInvalidation("");
   }
 
-  const tabs = [{name:"Portfolio & P&L",icon:Wallet},{name:"Compare assets",icon:BarChart3},{name:"Calculators",icon:Calculator},{name:"Research journal",icon:TrendingUp},{name:"Market timing",icon:Clock3},{name:"Historical Data Lab",icon:BarChart3}];
+  const tabs = [{name:"Portfolio & P&L",icon:Wallet},{name:"Compare assets",icon:BarChart3},{name:"Calculators",icon:Calculator},{name:"Research journal",icon:TrendingUp},{name:"Market timing",icon:Clock3},{name:"Historical Data Lab",icon:BarChart3},{name:"Trade & Risk Planner",icon:ShieldCheck}];
   return <div className="page-stack investment-hub">
     <div className="notice"><ShieldCheck size={17}/><div><strong>FinPilot wealth tools + MarketPilot market research</strong><span>One integrated workspace. Personal calculations use your entries; no live prices or AI trade signals are implied.</span></div><span className="notice-tag">INTEGRATED</span></div>
     <div className="hub-tabs">{tabs.map(({name,icon:Icon})=><button key={name} className={tab===name?"selected":""} onClick={()=>setTab(name)}><Icon size={15}/>{name}</button>)}</div>
@@ -138,6 +146,20 @@ export default function InvestmentHub() {
       <section className="panel"><div className="panel-title"><div><h3>Risk & return basics</h3><p>Read before using projections</p></div><ShieldCheck size={17}/></div><ul className="hub-bullets"><li>Higher expected return usually comes with higher uncertainty.</li><li>Past returns do not predict future performance.</li><li>Compare like-for-like periods, currency and total-return data.</li><li>Include fees, taxes, inflation and liquidity in real decisions.</li></ul></section></div>}
     {tab==="Research journal" && <><section className="panel"><div className="panel-title"><div><h3>Investment research brief</h3><p>Record your thesis before making a decision</p></div><span className="pill muted">EVIDENCE FIRST</span></div><div className="calculator-fields hub-fields"><label>Symbol / asset<input value={symbol} onChange={e=>setSymbol(e.target.value)} placeholder="Ticker / fund / commodity"/></label><label className="span-two">Investment thesis<textarea rows={3} value={thesis} onChange={e=>setThesis(e.target.value)} placeholder="Why are you researching this asset?"/></label><label>Catalysts / supporting evidence<textarea rows={3} value={catalyst} onChange={e=>setCatalyst(e.target.value)}/></label><label>Key risks<textarea rows={3} value={risk} onChange={e=>setRisk(e.target.value)}/></label><label className="span-two">What would invalidate the thesis?<textarea rows={2} value={invalidation} onChange={e=>setInvalidation(e.target.value)}/></label></div><button className="primary-button" onClick={saveNote}><Plus size={14}/>Save research note</button></section>
       <section className="panel"><div className="panel-title"><h3>Saved research</h3><span className="pill muted">{notes.length} NOTES</span></div>{notes.length===0?<div className="empty-state"><BookOpen size={22}/><strong>No research saved yet</strong><span>Write a thesis with evidence, risk and invalidation above.</span></div>:notes.map(n=><article className="research-note" key={n.id}><div><strong>{n.symbol}</strong><small>{n.created}</small></div><p>{n.thesis}</p><span><b>Evidence:</b> {n.catalyst||"Not added"}</span><span><b>Risks:</b> {n.risk}</span><span><b>Invalidation:</b> {n.invalidation}</span><button className="outline-button" onClick={()=>setNotes(old=>old.filter(x=>x.id!==n.id))}>Delete note</button></article>)}</section></>}
+    {tab==="Trade & Risk Planner" && <section className="panel"><div className="panel-title"><div><h3>Position sizing & scenario P&L</h3><p>Calculate risk using your own entry, stop, target and capital assumptions</p></div><span className="pill muted">PLANNING TOOL</span></div>
+      <div className="notice"><ShieldCheck size={16}/><div><strong>This is not a trade signal</strong><span>It does not suggest a security, entry time or direction. It only sizes a hypothetical position from values you enter.</span></div></div>
+      <div className="calculator-fields hub-fields">
+        <label>Position side<select value={tradeSide} onChange={e=>setTradeSide(e.target.value)}><option>Long</option><option>Short</option></select></label>
+        <label>Entry price<input type="number" min="0" value={tradeEntry} onChange={e=>setTradeEntry(e.target.value)}/></label>
+        <label>Stop-loss price<input type="number" min="0" value={tradeStop} onChange={e=>setTradeStop(e.target.value)}/></label>
+        <label>Target price<input type="number" min="0" value={tradeTarget} onChange={e=>setTradeTarget(e.target.value)}/></label>
+        <label>Trading capital (₹)<input type="number" min="0" value={tradeCapital} onChange={e=>setTradeCapital(e.target.value)}/></label>
+        <label>Risk per idea (%) · max 5<input type="number" min="0.1" max="5" step="0.1" value={tradeRisk} onChange={e=>setTradeRisk(e.target.value)}/></label>
+        <label>Lot / unit multiple<input type="number" min="1" value={tradeLot} onChange={e=>setTradeLot(e.target.value)}/></label>
+      </div>
+      {!tradePlan.valid?<p className="negative hub-footnote">Check your inputs: for Long, stop must be below entry and target above entry; for Short, stop must be above entry and target below entry. Risk must be between 0 and 5%.</p>:<div className="portfolio-stats history-stats"><article><span>Suggested max units from risk cap</span><strong>{tradePlan.units.toLocaleString("en-IN")}</strong></article><article><span>Planned maximum loss</span><strong className="negative">{money(tradePlan.plannedLoss)}</strong></article><article><span>Potential target P&L</span><strong className="positive">{money(tradePlan.plannedProfit)}</strong></article><article><span>Reward / risk</span><strong>{tradePlan.rr.toFixed(2)} : 1</strong></article><article><span>Risk per unit</span><strong>{money(tradePlan.riskPerUnit)}</strong></article><article><span>Risk budget</span><strong>{money(tradePlan.maxRisk)}</strong></article></div>}
+      <p className="hub-footnote">Position sizing assumes a fill exactly at the entered prices and ignores gaps, partial fills, slippage, brokerage, taxes, margin, liquidity, contract rules and correlated portfolio exposure. Actual loss can exceed the planned stop-loss risk. Derivatives require contract-specific lot sizes and margin checks.</p>
+    </section>}
     {tab==="Historical Data Lab" && <section className="panel"><div className="panel-title"><div><h3>Historical asset analyzer</h3><p>Import CSV close-price history for Indian stocks, ETFs, gold, funds or global tickers</p></div><span className="pill muted">YOUR DATA</span></div>
       <div className="notice"><ShieldCheck size={16}/><div><strong>No fabricated quotes</strong><span>Paste or import your own historical data. Required CSV columns: date,close. Use daily closes and include a header row.</span></div></div>
       <label className="hub-upload">Import CSV file<input type="file" accept=".csv,text/csv" onChange={e=>{const file=e.target.files?.[0];if(file){const reader=new FileReader();reader.onload=()=>setHistoryCsv(String(reader.result||""));reader.readAsText(file);}}}/></label>
