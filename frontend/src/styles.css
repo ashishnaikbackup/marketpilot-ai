@@ -261,3 +261,9 @@ footer{border-color:#e4ebe5;color:#8c9990}
 @media(max-width:760px){.money-grid{grid-template-columns:1fr}.spend-row{grid-template-columns:80px 1fr 75px}.money-toolbar>*{flex:1}}
 
 .overview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+
+.copilot-api-status{margin:8px 0 0;color:#4b8b60;font-size:9px;line-height:1.4}
+.copilot-privacy{display:grid;gap:8px;margin:12px 0 4px;padding:10px;border:1px solid #edf1ed;border-radius:8px;background:#fbfcfb}
+.copilot-privacy label{display:flex;align-items:center;gap:8px;color:#68786d;font-size:9px;line-height:1.4}
+.copilot-privacy input{accent-color:#23854b}
