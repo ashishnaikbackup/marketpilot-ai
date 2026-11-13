@@ -52,3 +52,23 @@ def test_expiry_payoff_rejects_zero_quantity() -> None:
         },
     )
     assert response.status_code == 422
+
+
+def test_greeks_endpoint_returns_modelled_assumptions() -> None:
+    response = client.post(
+        "/api/v1/options/greeks",
+        json={
+            "side": "call",
+            "spot": 100,
+            "strike": 100,
+            "years_to_expiry": 1,
+            "risk_free_rate": 0.05,
+            "volatility": 0.2,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["model"] == "black_scholes_european"
+    assert body["data_mode"] == "modelled_assumptions"
+    assert body["gamma"] > 0
+    assert "not a market quote" in body["disclaimer"]
