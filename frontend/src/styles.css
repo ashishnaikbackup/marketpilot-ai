@@ -212,3 +212,11 @@ footer{border-color:#e4ebe5;color:#8c9990}
 .india-file-label{display:grid;gap:7px;margin-top:14px;color:#68786d;font-size:10px;font-weight:650}
 .india-file-label input{width:100%;box-sizing:border-box;padding:10px;border:1px dashed #cbdccf;border-radius:9px;background:#f8fbf8;color:#63736a;font:10px Inter,sans-serif}
 .india-file-label input::file-selector-button{margin-right:10px;padding:7px 11px;border:1px solid #d5e5d9;border-radius:7px;background:#edf6ef;color:#187b43;font:600 10px Inter,sans-serif}
+
+
+.copilot-connect{display:flex;gap:8px;margin-top:13px}
+.copilot-connect input{min-width:0;flex:1;height:36px;padding:0 10px;border:1px solid #dfe8e1;border-radius:8px;background:#fbfcfb;color:#24372a;font:10px Inter,sans-serif}
+.copilot-connect button{flex:none;padding:0 13px}
+.copilot-connect-note{font-size:8px;line-height:1.55;color:#89958d;margin:9px 0 0}
+.copilot-error{margin:0 15px 12px;padding:9px 11px;border:1px solid #f0d5d5;border-radius:8px;background:#fff5f5;color:#a34f4f;font-size:9px;line-height:1.5}
+.copilot-spinner{font-size:18px;line-height:1}
