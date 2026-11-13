@@ -28,7 +28,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 
 ### Milestone 3 — F&O workbench (highest product priority)
 - [ ] Live option-chain table with strike, CE/PE LTP, volume, OI and change in OI (UI empty state is ready)
-- [x] Initial European Black-Scholes price and Greeks calculator with documented assumptions (not an IV solver or market quote)
+- [x] European Black-Scholes theoretical price, Greeks and bounded implied-volatility solver with documented assumptions (not exchange quotes)
 - [ ] PCR, OI concentration and expiry comparisons
 - [ ] ATM/ITM/OTM identification and strike/expiry filters
 - [x] Single-leg expiry payoff calculator; [ ] defined-risk multi-leg strategy builder and payoff chart
