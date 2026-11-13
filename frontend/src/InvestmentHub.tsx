@@ -61,9 +61,9 @@ export default function InvestmentHub() {
     const value = p * Math.pow(1 + r, n); return { invested: p, value, gain: value - p };
   }, [lump, rate, years]);
   const history = useMemo(() => {
-    const rows = historyCsv.trim().split(/\\r?\\n/).map(line=>line.trim()).filter(Boolean);
+    const rows = historyCsv.trim().split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
     if (rows.length < 21 || rows.length > 5002) return null;
-    const parsed = rows.slice(1).map(line=>line.split(/[;,\\t]/)).map(parts=>({date:parts[0]?.trim()||"",close:Number(parts[1])})).filter(x=>x.date && Number.isFinite(x.close) && x.close>0).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+    const parsed = rows.slice(1).map(line=>line.split(/[;,\t]/)).map(parts=>({date:parts[0]?.trim()||"",close:Number(parts[1])})).filter(x=>x.date && Number.isFinite(x.close) && x.close>0).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
     if (parsed.length < 20 || parsed.some(x=>!Number.isFinite(Date.parse(x.date)))) return null;
     const prices=parsed.map(x=>x.close), returns=prices.slice(1).map((x,i)=>x/prices[i]-1);
     const mean=returns.reduce((a,b)=>a+b,0)/(returns.length||1);
