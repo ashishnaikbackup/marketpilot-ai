@@ -68,7 +68,7 @@ Copy `backend/.env.example` to `backend/.env`. Do not commit secrets. The initia
 
 ## Development stages
 
-See [Roadmap](docs/ROADMAP.md), [Architecture](docs/ARCHITECTURE.md), and [Safety & Compliance](docs/SAFETY_AND_COMPLIANCE.md).
+See [Roadmap](docs/ROADMAP.md), [Architecture](docs/ARCHITECTURE.md), [Safety & Compliance](docs/SAFETY_AND_COMPLIANCE.md), and the [Claude handoff prompt](docs/CLAUDE_HANDOFF_PROMPT.md).
 
 ## Data and regulatory note
 
