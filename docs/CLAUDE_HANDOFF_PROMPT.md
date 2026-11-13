@@ -37,7 +37,7 @@ The user wants a functional, research-first financial intelligence platform. Ind
 **Backend: FastAPI**
 - Health endpoint.
 - Deterministic multi-leg option expiry payoff endpoint: `POST /api/v1/options/expiry-payoff`.
-- European Black-Scholes theoretical pricing/Greeks endpoint: `POST /api/v1/options/greeks`.
+- European Black-Scholes theoretical pricing/Greeks endpoint: `POST /api/v1/options/greeks`; bounded bisection implied-volatility endpoint: `POST /api/v1/options/implied-volatility`.
 - Market-data status endpoint explicitly reports no provider connected.
 - Research data-quality gate: `POST /api/v1/research/screen`, rejects demo, historical, stale, missing-timestamp, missing-source/exchange, incomplete and unvalidated inputs; default is NO_TRADE.
 - Provider-neutral normalized data contracts and async `MarketDataProvider` protocol in `backend/app/domain/market_data.py`; default `UnconfiguredMarketDataProvider` fails closed.
