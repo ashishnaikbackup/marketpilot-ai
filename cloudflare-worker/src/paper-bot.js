@@ -16,7 +16,7 @@ function trend(i){
 }
 function fresh(q,nowMs){if(!q||!finite(q.bid)||!finite(q.ask)||q.bid<=0||q.ask<q.bid||!q.timestamp)return false;const age=nowMs-Date.parse(q.timestamp);return Number.isFinite(age)&&age>=-60000&&age<=300000;}
 async function run(snapshot,env,trigger="manual"){
- if(!env.DB)throw Error("D1 binding DB is not configured.");
+ if(!env?.DB)throw Error("D1 binding DB is not configured.");
  if(!snapshot||snapshot.schema_version!==1||!["INDIA","GLOBAL"].includes(snapshot.region)||!Array.isArray(snapshot.instruments)||snapshot.instruments.length>1000||!snapshot.source||!snapshot.observed_at)throw Error("Invalid normalized snapshot. See docs/PAPER_BOT.md for the schema.");
  const nowMs=Date.now(),stamp=Date.parse(snapshot.observed_at),age=nowMs-stamp;
  if(!Number.isFinite(stamp)||age< -60000||age>900000||!["live","delayed"].includes(snapshot.data_mode))return {status:"skipped",reason:"Data is missing, future-dated, older than 15 minutes or not live/delayed.",data_age_seconds:Number.isFinite(age)?Math.round(age/1000):null};
@@ -79,23 +79,23 @@ async function run(snapshot,env,trigger="manual"){
 }
 export async function paperBotRoute(request,env,url){
  const path=url.pathname;
- if(request.method==="GET"&&path==="/api/v1/paper-bot/status")return json({configured:Boolean(env.DB),feed_configured:Boolean(env.MARKET_DATA_SNAPSHOT_URL),mode:"paper_only",strategy_version:"trend-options-v1",schedule_utc:["10:20 UTC weekdays — India closing scan","22:30 UTC weekdays — global closing scan"],message:!env.DB?"D1 database is not configured.":!env.MARKET_DATA_SNAPSHOT_URL?"Normalized licensed market-data adapter is not configured.":"Bot services are configured; verify provider entitlements and data quality."});
+ if(request.method==="GET"&&path==="/api/v1/paper-bot/status")return json({configured:Boolean(env?.DB),feed_configured:Boolean(env.MARKET_DATA_SNAPSHOT_URL),mode:"paper_only",strategy_version:"trend-options-v1",schedule_utc:["10:20 UTC weekdays — India closing scan","22:30 UTC weekdays — global closing scan"],message:!env.DB?"D1 database is not configured.":!env.MARKET_DATA_SNAPSHOT_URL?"Normalized licensed market-data adapter is not configured.":"Bot services are configured; verify provider entitlements and data quality."});
  if(request.method==="GET"&&path==="/api/v1/paper-bot/positions"){
-  if(!env.DB)return error("D1 database is not configured.",503);
+  if(!env?.DB)return error("D1 database is not configured.",503);
   if(!env.BOT_READ_TOKEN)return error("Paper bot read access is disabled until BOT_READ_TOKEN is configured.",503);
   if(request.headers.get("Authorization")!=="Bearer "+env.BOT_READ_TOKEN)return error("Valid paper bot read token required.",401);
   const region=url.searchParams.get("region"),r=region?await env.DB.prepare("SELECT * FROM bot_positions WHERE region=? ORDER BY opened_at DESC LIMIT 200").bind(region).all():await env.DB.prepare("SELECT * FROM bot_positions ORDER BY opened_at DESC LIMIT 200").all();
   return json({positions:r.results||[],mode:"paper_only"});
  }
  if(request.method==="GET"&&path==="/api/v1/paper-bot/reports"){
-  if(!env.DB)return error("D1 database is not configured.",503);
+  if(!env?.DB)return error("D1 database is not configured.",503);
   if(!env.BOT_READ_TOKEN)return error("Paper bot read access is disabled until BOT_READ_TOKEN is configured.",503);
   if(request.headers.get("Authorization")!=="Bearer "+env.BOT_READ_TOKEN)return error("Valid paper bot read token required.",401);
   const r=await env.DB.prepare("SELECT id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json FROM bot_runs ORDER BY started_at DESC LIMIT 50").all();
   return json({reports:(r.results||[]).map(x=>({...x,report:JSON.parse(x.report_json||"{}")}))});
  }
  if(request.method==="POST"&&path==="/api/v1/paper-bot/run"){
-  if(!env.DB)return error("D1 database is not configured.",503);
+  if(!env?.DB)return error("D1 database is not configured.",503);
   if(!env.BOT_RUN_TOKEN||request.headers.get("Authorization")!=="Bearer "+env.BOT_RUN_TOKEN)return error("Valid server-side BOT_RUN_TOKEN required.",401);
   try{const p=await request.json();return json(await run(p.snapshot,env,"manual"));}catch(e){return error(e instanceof Error?e.message:"Invalid paper-bot request.");}
  }
