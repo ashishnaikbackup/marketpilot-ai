@@ -39,3 +39,14 @@ def test_expiry_payoff_rejects_invalid_range() -> None:
         },
     )
     assert response.status_code == 422
+
+\n\ndef test_expiry_payoff_rejects_zero_quantity() -> None:
+    response = client.post(
+        "/api/v1/options/expiry-payoff",
+        json={
+            "positions": [{"side": "call", "quantity": 0, "strike": 100, "premium": 5}],
+            "spot_min": 80,
+            "spot_max": 120,
+        },
+    )
+    assert response.status_code == 422
