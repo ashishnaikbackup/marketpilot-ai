@@ -74,7 +74,7 @@ test("AI chat uses the server-side research guardrails and returns model output"
   assert.equal(modelName,"@cf/google/gemma-4-26b-a4b-it");
   assert.match(sentMessages[0].content,/NO TRADE/);
   assert.match(sentMessages[1].content,/user-supplied context/);
-  assert.match(result.answer,/descriptive/);
+  assert.match(result.answer,/descriptive/);\n  assert.equal(result.workflow.understand.intent,"india_derivatives");\n  assert.equal(result.workflow.retrieve.external_sources_searched,false);\n  assert.equal(result.workflow.research.live_market_data_available,false);
 });
 
 test("AI status reports whether the Workers AI binding is configured", async () => {
