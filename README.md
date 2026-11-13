@@ -6,7 +6,7 @@
 
 MarketPilot AI is an integrated financial intelligence platform combining MarketPilot's active-market research and F&O tools with FinPilot-style wealth planning, portfolio analytics and long-term investment research. Its first product focus is Indian index derivatives: **NIFTY 50, BANKNIFTY and FINNIFTY**, with options-chain analytics, volatility context, scenario analysis, risk calculations, paper trading and scheduled research reports.
 
-> **Current status:** Functional research-first MVP foundation. The dashboard includes India F&O tools, a guarded scanner, strategy payoff lab, browser-local paper journal, report builder, global watchlist, integrated investment hub (portfolio/P&L, asset comparisons, SIP/lump-sum/goal calculators, research journal, market-session guide, position sizing and stop/target/reward-risk planner), an interactive learning academy, and a clean light-theme wealth/research UI. An AI Copilot workspace preview provides local educational explanations and strategy comparisons; it is explicitly rule-based and is not yet connected to an LLM or live data. The Investment Hub also supports CSV-based historical price analysis (return, CAGR, annualised volatility, drawdown, RSI and moving averages), a hypothetical position-sizing and risk/reward planner, and official exchange-session references for US and Asian markets. No live exchange feed, broker connection, AI-generated signal or real-money execution is enabled.
+> **Current status:** Functional research-first MVP foundation. The dashboard includes India F&O tools, a guarded scanner, strategy payoff lab, browser-local paper journal, report builder, global watchlist, integrated investment hub (portfolio/P&L, asset comparisons, SIP/lump-sum/goal calculators, research journal, market-session guide, position sizing and stop/target/reward-risk planner), an interactive learning academy, and a clean light-theme wealth/research UI. The India Market Lab imports user-supplied NIFTY/BANKNIFTY/FINNIFTY option-chain CSVs and calculates PCR, change-OI PCR, max pain, highest OI strikes, ATM IV and quoted spreads. The Copilot can read the locally saved imported-chain metrics and explain their limitations; it remains a rule-based preview, not an LLM or live data feed. The Investment Hub also supports CSV-based historical price analysis (return, CAGR, annualised volatility, drawdown, RSI and moving averages), a hypothetical position-sizing and risk/reward planner, and official exchange-session references for US and Asian markets. No live exchange feed, broker connection, AI-generated signal or real-money execution is enabled.
 
 ## Product principles
 
@@ -21,7 +21,7 @@ MarketPilot AI is an integrated financial intelligence platform combining Market
 ## Planned capabilities
 
 - India market overview: NIFTY, BANKNIFTY, FINNIFTY, India VIX, sectors and market breadth.
-- F&O workbench: option chain, OI/change in OI, volume, IV, Greeks, PCR, expiry and payoff analysis.
+- F&O workbench: option chain, OI/change in OI, volume, IV, Greeks, PCR, expiry and payoff analysis.\n- India Market Lab: import a user-supplied option-chain CSV, calculate PCR, change-OI PCR, max pain, OI concentrations, ATM IV and quoted spreads; the Copilot can explain the imported snapshot.
 - Research scanner: bullish/bearish/neutral scenarios, entry zone, targets, invalidation and risk/reward — or NO TRADE.
 - Strategy lab: payoff and breakeven for defined-risk option structures.
 - Paper portfolio and trade journal.
