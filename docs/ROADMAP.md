@@ -9,7 +9,7 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [x] FastAPI service and health endpoint
 - [x] Initial option payoff domain functions and tests
 - [x] React/TypeScript dashboard shell with demo-data disclosure
-- [x] CI workflow for backend lint/tests and frontend production build (verification in progress)
+- [x] CI workflow for backend lint/tests, frontend production build and Cloudflare Worker tests
 
 ### Milestone 1 — Data foundation
 - [x] Explicit unavailable-provider status endpoint
@@ -25,13 +25,14 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Index/sector overview, breadth, movers and watchlists
 - [ ] Technical indicators with transparent calculation settings
 - [ ] News and official-event calendar with source links
+- [x] India Market Lab: manual CSV import for NIFTY/BANKNIFTY/FINNIFTY with PCR, change-OI PCR, max pain, OI concentration, ATM IV and spread calculations (user-supplied data only)
 
 - [x] Descriptive option-chain PCR/OI/change-in-OI/volume analytics API for supplied validated rows (not connected to a provider)
 
 ### Milestone 3 — F&O workbench (highest product priority)
 - [ ] Live option-chain table with strike, CE/PE LTP, volume, OI and change in OI (UI empty state is ready)
 - [x] European Black-Scholes theoretical price, Greeks and bounded implied-volatility solver with documented assumptions (not exchange quotes)
-- [ ] PCR, OI concentration and expiry comparisons
+- [x] PCR and OI concentration calculations from imported option-chain rows; [ ] live expiry comparisons
 - [ ] ATM/ITM/OTM identification and strike/expiry filters
 - [x] Single-leg expiry payoff calculator; [ ] defined-risk multi-leg strategy builder and payoff chart
 - [ ] Max loss, max profit, breakeven, margin caveats and scenario shocks
@@ -52,6 +53,8 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [ ] Structured JSON schema validation, prompt versioning, token/cost logging and retrieval citations
 
 ### Milestone 5 — AI analyst
+- [x] Optional Cloudflare Workers AI chat endpoint with fixed India-market and personal-finance guardrails; [ ] deployment and usage protection
+- [x] Copilot can retrieve locally stored option-chain and Money Manager summaries; [ ] source-backed external research retrieval and citations
 - [ ] Provider-neutral LLM interface
 - [ ] OpenAI adapter
 - [ ] Claude adapter
@@ -63,12 +66,14 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [x] Browser-local paper trade journal with manual entry/exit and closed P&L; [ ] virtual cash, positions and full order lifecycle
 - [x] Browser-local trade journal with thesis, direction, stop and target fields
 - [x] FinPilot-style manual holdings ledger with INR-converted unrealised P&L and user-entered FX; [ ] persistent account-backed holdings and realised/unrealised performance
+- [x] Money Manager with manual income/expense ledger, monthly budgets, savings goals, local cash-flow/health indicators and CSV import/export; [ ] bank/UPI integration and per-user encrypted sync
 - [x] Position-sizing, stop-loss/target, risk-budget and reward/risk calculator; [ ] execution-aware portfolio-level risk aggregation
 - [ ] P&L, drawdown, exposure and risk limits
 - [ ] Replay and paper-trade evaluation
 - [ ] No broker order routing in this milestone
 
 ### Milestone 7 — Automated research reports
+- [x] In-app budget-overrun indicators and savings-goal progress (browser-local); [ ] scheduled/push alerts with quiet hours and audit history
 - [ ] Pre-market report
 - [ ] Intraday event/threshold alerts
 - [ ] Closing report
@@ -94,7 +99,10 @@ The product is India-first. NIFTY/BANKNIFTY derivatives are the core workflow; g
 - [x] Docker backend image and Render Blueprint deployment definition (service provisioning remains external)
 - [ ] Monitoring, backups, disaster recovery and security review
 - [ ] Data-provider licensing and legal review
-- [x] Static frontend deployed to GitHub Pages; [ ] backend deployment and operational runbooks
+- [x] Vite GitHub Pages build/deploy workflow and project-base configuration
+- [ ] GitHub Pages repository source switched to GitHub Actions and React dashboard verified live
+- [ ] Cloudflare Worker deployed to the user's account and API health verified
+- [ ] backend deployment and operational runbooks
 
 ## Definition of done
 
