@@ -34,7 +34,7 @@ function csvParse(text:string):Row[] {
     const assetType=(get(c,"asset_type","type","instrument_type")||"EQUITY").toUpperCase();
     rows.push({
       timestamp,symbol,underlying:(get(c,"underlying","underlying_symbol")||symbol).toUpperCase(),
-      market:(get(c,"market","exchange","region")||"GLOBAL").toUpperCase(),assetType,
+      market:(get(c,"market","exchange","region")||"GLOBAL").toUpperCase(),assetType:assetType.includes("OPT")||assetType==="CE"||assetType==="PE"?"OPTION":assetType.includes("FUT")?"FUTURE":assetType.includes("ETF")?"ETF":assetType.includes("EQ")||assetType.includes("STOCK")?"EQUITY":assetType,
       open:num(get(c,"open")),high:num(get(c,"high"))||close,low:num(get(c,"low"))||close,close,
       volume:num(get(c,"volume","vol")),optionType:(get(c,"option_type","right")||"").toUpperCase(),
       strike:num(get(c,"strike")),expiry:get(c,"expiry","expiry_date"),
@@ -57,7 +57,7 @@ export default function PaperTradingBot(){
   const [capital,setCapital]=useState("1000000");
   const [riskPct,setRiskPct]=useState("0.5");
   const [maxPositions,setMaxPositions]=useState("5");
-  const [watchlist,setWatchlist]=useState("NIFTY 50, BANKNIFTY, RELIANCE, TCS, INFY, AAPL, MSFT, SPY, QQQ");
+  const [watchlist,setWatchlist]=useState("NIFTY, BANKNIFTY, FINNIFTY, RELIANCE, TCS, INFY, AAPL, MSFT, SPY, QQQ");
   const [status,setStatus]=useState("Import a timestamped CSV to start. No live feed is connected.");
   const [skipped,setSkipped]=useState<string[]>([]);
   const [busy,setBusy]=useState(false);
@@ -81,7 +81,7 @@ export default function PaperTradingBot(){
     const next=[...trades];const notes:string[]=[];const skips:string[]=[];
     // Update open simulations only from the newest imported close for the same instrument/contract.
     for(let i=0;i<next.length;i++){const t=next[i];if(t.status!=="OPEN")continue;const candidates=rows.filter(r=>t.assetType==="OPTION"?r.assetType==="OPTION"&&r.underlying===t.underlying&&r.optionType===t.optionType&&r.strike===t.strike&&r.expiry===t.expiry:r.symbol===t.symbol);const latest=candidates.sort((a,b)=>(isoTime(b.timestamp)?.getTime()||0)-(isoTime(a.timestamp)?.getTime()||0))[0];if(!latest)continue;const mark=latest.close;const move=(mark-t.entry)*t.quantity;const stopHit=mark<=t.stop,targetHit=mark>=t.target;next[i]={...t,mark,pnl:move,...(stopHit||targetHit?{status:"CLOSED",exit:stopHit?t.stop:t.target,closedAt:new Date().toISOString(),exitReason:stopHit?"Stop assumption reached":"Target assumption reached",pnl:((stopHit?t.stop:t.target)-t.entry)*t.quantity}:{})};if(stopHit||targetHit)notes.push(`Closed ${t.symbol}: ${stopHit?"stop":"target"} assumption reached.`);}
-    const active=next.filter(t=>t.status==="OPEN").length;
+    let active=next.filter(t=>t.status==="OPEN").length;
     const used=new Set(next.filter(t=>t.status==="OPEN").map(t=>t.underlying));
     for(const [symbol,bars] of grouped){
       if(watched.length&&!watched.some(w=>symbol.includes(w)||w.includes(symbol)))continue;
@@ -103,15 +103,15 @@ export default function PaperTradingBot(){
         const qty=chosen.lotSize,stop=mid*.65,target=mid*1.6,riskMoney=(mid-stop)*qty;
         if(riskMoney>cash*risk){skips.push(`${symbol}: one option lot exceeds the ${(risk*100).toFixed(2)}% virtual risk budget`);continue;}
         trade={id:crypto.randomUUID(),symbol:`${symbol} ${chosen.expiry} ${chosen.optionType} ${chosen.strike}`,underlying:symbol,market:chosen.market,assetType:"OPTION",optionType:chosen.optionType,strike:chosen.strike,expiry:chosen.expiry,side:"BUY",quantity:qty,entry:mid,stop,target,mark:mid,pnl:0,status:"OPEN",openedAt:new Date().toISOString(),sourceTime:chosen.timestamp,thesis:`${bull?"Bullish":"Bearish"} underlying trend; 9/21 EMA alignment, RSI ${strength!.toFixed(1)}, volume ratio ${volRatio.toFixed(2)}x. Long option only; premium at mid assumed.`};
-      } else if(bull && (last.assetType==="EQUITY"||last.assetType==="ETF"||last.assetType==="STOCK"||last.assetType==="")) {
-        const stop=last.close-2*(range||last.close*.02),target=last.close+3*(last.close-stop),qty=Math.floor(cash*risk/Math.max(.01,last.close-stop));
-        if(qty<1){skips.push(`${symbol}: share quantity below one at current risk budget`);continue;}
-        trade={id:crypto.randomUUID(),symbol,underlying:symbol,market:last.market,assetType:last.assetType,optionType:"",strike:0,expiry:"",side:"BUY",quantity:qty,entry:last.close,stop,target,mark:last.close,pnl:0,status:"OPEN",openedAt:new Date().toISOString(),sourceTime:last.timestamp,thesis:`Bullish trend; 9/21 EMA alignment, RSI ${strength!.toFixed(1)}, volume ratio ${volRatio.toFixed(2)}x. Simulated cash-equity entry at last close.`};
+      } else if(bull && last.assetType!=="OPTION" && last.assetType!=="CE" && last.assetType!=="PE") {
+        const stop=last.close-2*(range||last.close*.02),target=last.close+3*(last.close-stop),unit=last.assetType==="FUTURE"?last.lotSize:1,unitRisk=Math.max(.01,last.close-stop)*unit,units=Math.floor(cash*risk/unitRisk),qty=units*unit;
+        if(qty<1){skips.push(${symbol}: minimum unit/lot exceeds the virtual risk budget`);continue;}
+        trade={id:crypto.randomUUID(),symbol,underlying:symbol,market:last.market,assetType:last.assetType,optionType:"",strike:0,expiry:"",side:"BUY",quantity:qty,entry:last.close,stop,target,mark:last.close,pnl:0,status:"OPEN",openedAt:new Date().toISOString(),sourceTime:last.timestamp,thesis:`Bullish trend; 9/21 EMA alignment, RSI ${strength!.toFixed(1)}, volume ratio ${volRatio.toFixed(2)}x. Simulated ${last.assetType} entry at last close.`};
       } else {skips.push(`${symbol}: signal found but no eligible long-only cash/ETF or liquid matching CE/PE contract`);continue;}
-      next.unshift(trade);used.add(symbol);notes.push(`PAPER BUY ${trade.symbol} · ${trade.quantity} units · assumed entry ${trade.entry.toFixed(2)}`);
+      next.unshift(trade);used.add(symbol);active+=1;notes.push(`PAPER BUY ${trade.symbol} · ${trade.quantity} units · assumed entry ${trade.entry.toFixed(2)}`);
     }
     persistTrades(next);setSkipped(skips);setLastScan(new Date().toISOString());setStatus(`Scan complete. ${notes.length} trade events; ${skips.length} safeguards/no-entry reasons. No broker orders were sent.`);
-    setReport(makeReport(next,notes,skips,latestDate));setBusy(false);
+    const daily=makeReport(next,notes,skips,latestDate);setReport(daily);const savedReports=[daily,...reports.filter(x=>x.date!==daily.date)];setReports(savedReports);localStorage.setItem(REPORTS_KEY,JSON.stringify(savedReports));setBusy(false);
   }
   function makeReport(sourceTrades:Trade[],decisions:string[],skip:string[],asOf:string):Report{
     const today=new Date().toISOString().slice(0,10),dayTrades=sourceTrades.filter(t=>t.openedAt.slice(0,10)===today||t.closedAt?.slice(0,10)===today),closed=dayTrades.filter(t=>t.status==="CLOSED"),r=closed.reduce((s,t)=>s+t.pnl,0);
