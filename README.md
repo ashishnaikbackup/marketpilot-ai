@@ -62,7 +62,11 @@ npm run dev
 
 The frontend reads `VITE_API_BASE_URL` (default `http://localhost:8000/api/v1`). Until a licensed/approved market data adapter is configured, sample values are labelled DEMO.
 
-## First implemented API\n\nThe options expiry-payoff endpoint accepts multiple call/put legs and returns a spot-versus-gross-expiry-P&L curve. It is deterministic and does not include fees, slippage, margin or live mark-to-market valuation. See the OpenAPI docs for the request schema.\n\n## Configuration
+## First implemented API
+
+The options expiry-payoff endpoint accepts multiple call/put legs and returns a spot-versus-gross-expiry-P&L curve. It is deterministic and does not include fees, slippage, margin or live mark-to-market valuation. See the OpenAPI docs for the request schema.
+
+## Configuration
 
 Copy `backend/.env.example` to `backend/.env`. Do not commit secrets. The initial app works without an AI key or market-data key.
 
