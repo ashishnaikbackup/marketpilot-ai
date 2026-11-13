@@ -80,6 +80,10 @@ The integrated Investment Hub adds manual holdings and unrealised P&L with user-
 
 The React dashboard now includes an India F&O workbench (with a modelled Greeks calculator), a research readiness scanner, and a browser-local paper journal. The backend exposes provider-neutral quote/option-chain contracts but intentionally ships with no connected provider. The options expiry-payoff endpoint accepts multiple call/put legs and returns a spot-versus-gross-expiry-P&L curve. The Greeks endpoint calculates European Black-Scholes theoretical price, delta, gamma, annual theta and vega from user-supplied assumptions. A bounded bisection solver estimates model-implied volatility from a user-supplied option premium. A separate research gate rejects demo, stale, incomplete or unprovenanced data with NO_TRADE. These calculations do not include exchange quotes, fees, slippage, margin or a trade recommendation. See the OpenAPI docs, [model notes](docs/OPTIONS_MODELS.md), and [provider contract](docs/MARKET_DATA_PROVIDER.md) for details.
 
+## Free-first hosting
+
+The frontend remains on GitHub Pages. A lightweight Cloudflare Workers API is now included under `cloudflare-worker/` as the recommended free-first backend alternative to Render. See [Free deployment guide](docs/FREE_DEPLOYMENT.md) for the one-time setup and current limits. The Worker handles health/status, option calculations, option-chain summaries, research readiness checks and the SMA crossover backtest. No database is required for the current browser-local single-user MVP.
+
 ## Configuration
 
 Copy `backend/.env.example` to `backend/.env`. Do not commit secrets. The initial app works without an AI key or market-data key.
