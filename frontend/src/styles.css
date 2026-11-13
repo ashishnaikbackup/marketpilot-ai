@@ -43,3 +43,21 @@
 .timing-list time{font:700 10px Manrope,sans-serif;color:#aebaff}.timing-list strong{display:block;color:#e2e9f6;font-size:10px}.timing-list span{display:block;color:#8291a9;font-size:9px;line-height:1.6;margin-top:4px}
 @media(max-width:760px){.hub-fields{grid-template-columns:1fr 1fr}.hub-fields .span-two{grid-column:span 2}.hub-two-col{grid-template-columns:1fr}.hub-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:5px}.hub-tabs button{white-space:nowrap}.timing-list article{grid-template-columns:90px 1fr}}
 @media(max-width:390px){.hub-fields{grid-template-columns:1fr}.hub-fields .span-two{grid-column:auto}}
+
+
+.academy-percent{font:700 20px Manrope,sans-serif;color:#b5c2ff}
+.academy-progress{height:8px;background:#202b3e;border-radius:8px;overflow:hidden;margin:16px 0 9px}
+.academy-progress span{display:block;height:100%;background:linear-gradient(90deg,#647cff,#8e77ed);border-radius:8px;transition:width .2s}
+.academy-lessons{display:grid;margin-top:12px}
+.academy-lesson{border-top:1px solid #26334a}
+.academy-lesson-head{display:flex;align-items:center;gap:12px;width:100%;padding:14px 2px;background:none;border:0;text-align:left;color:#e4eaf6}
+.academy-index{font:700 10px Manrope,sans-serif;color:#9baaff;background:#1b2942;border-radius:7px;padding:8px}
+.academy-title{flex:1}.academy-title strong,.academy-title small{display:block}.academy-title strong{font-size:11px}.academy-title small{font-size:9px;color:#8190a8;margin-top:4px}
+.academy-body{padding:0 12px 17px 45px}.academy-body>p{font-size:10px;line-height:1.7;color:#a7b4c9;margin:9px 0}
+.academy-quiz{background:#0d1728;border:1px solid #2a3851;border-radius:8px;padding:13px;margin-top:13px}
+.academy-quiz>div:first-child{display:flex;align-items:center;gap:7px;color:#b4c1ff}.academy-quiz>div:first-child strong{font-size:10px}
+.academy-quiz>p{font-size:10px;color:#e2e9f6;margin:12px 0}
+.academy-option{display:flex;align-items:flex-start;gap:8px;padding:8px 0;color:#9fadc2;font-size:10px}.academy-option input{accent-color:#8293ff}
+.academy-correct,.academy-wrong{font-size:9px;line-height:1.6;padding:9px;border-radius:6px;margin:9px 0}.academy-correct{background:#17352f;color:#83d7b9}.academy-wrong{background:#39262d;color:#e9a4ae}
+.academy-quiz .primary-button{margin-left:8px}
+@media(max-width:760px){.academy-body{padding-left:4px}.academy-quiz .primary-button{margin:8px 0 0}}
