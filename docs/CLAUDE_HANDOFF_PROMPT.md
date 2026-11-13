@@ -18,7 +18,7 @@ The user wants a functional, research-first financial intelligence platform. Ind
 - They view progress directly on GitHub and want a core MVP before leaving a smaller review/extension task to Claude.
 - No broker account is required for the research, education or paper-trading MVP.
 - Do not encourage real-money F&O trading or imply guaranteed returns.
-- Keep MarketPilot AI independent from any other personal project/repository.
+- Integrate the useful FinPilot AI wealth-management and investment-analysis scope into MarketPilot AI. Do not modify or overwrite any separate FinPilot AI repository unless the user explicitly asks; MarketPilot is now the combined destination.
 
 ### Current implemented state — inspect before changing
 
@@ -30,7 +30,7 @@ The user wants a functional, research-first financial intelligence platform. Ind
 - Strategy Lab: editable multi-leg calls/puts, long/short positions, quantities, lot sizes, expiry P&L curve over a user-selected spot range, approximate breakeven crossings and risk caveats.
 - Paper Portfolio: browser-local journal with hypothetical entry, stop, target and manual exit; closed P&L is hypothetical, no broker orders.
 - Research Reports: browser-local structured bull/base/bear brief, invalidation/risk/source notes and Markdown export.
-- Global Markets: asset-class coverage map and browser-local watchlist, no live quotes.
+- Global Markets: asset-class coverage map and browser-local watchlist, no live quotes.\n- Investment Hub (FinPilot integration): manual multi-asset holdings ledger with INR FX conversion and unrealised P&L; assumption-based asset comparison; SIP, lump-sum and goal calculators; research journal; India session timing education and trade-readiness checklist; CSV historical asset analyzer with total return, CAGR, annualised volatility, max drawdown, RSI and SMA20/50. Browser-local data only.\n- Learn: interactive self-paced Academy with 9 modules, knowledge checks and browser-local completion progress.
 - Learn: beginner learning path.
 - Backtest Lab: interactive UI accepting chronological user-supplied closing prices and calling the SMA crossover API; requires a separately deployed API URL.
 - Browser-local storage is not a cloud backup or multi-device account.
@@ -64,7 +64,7 @@ The user wants a functional, research-first financial intelligence platform. Ind
 ### Highest-priority remaining work
 
 1. Inspect current `main`, reproduce builds/tests, verify GitHub Pages deployment and fix any regression.
-2. Add a real provider adapter only after selecting a provider with documented API access, entitlements, display/redistribution rights, cost and rate limits. Until then, keep all quote/chain panels explicitly unavailable.
+2. Add a real provider adapter only after selecting a provider with documented API access, entitlements, display/redistribution rights, cost and rate limits. This is the key blocker for live price comparisons, current market scans, news/event context and actionable time-sensitive analysis. Until then, keep all quote/chain panels explicitly unavailable.
 3. Build the normalized option-chain API and UI for NIFTY/BANKNIFTY/FINNIFTY with source, exchange, instrument ID, observation/receive timestamps, mode, freshness and missing-field indicators.
 4. Add instrument master, exchange calendar, expiry/lot-size versioning and historical/replay boundaries.
 5. Improve analytics: PCR, OI/change-in-OI distributions, IV solver/context, ATM/ITM/OTM, max pain only as descriptive context, and expiry comparisons. Keep deterministic calculations in tested code; state model assumptions and limitations.
@@ -72,7 +72,7 @@ The user wants a functional, research-first financial intelligence platform. Ind
 7. Upgrade paper portfolio from browser-local journal to a tested paper ledger with virtual cash, position lifecycle, fees/slippage assumptions, realised/unrealised P&L, drawdown and audit history. No real broker execution.
 8. Build scheduled pre-market, intraday, closing, weekly and monthly reports only after reliable data and scheduler/notification infrastructure exist.
 9. Add provider-neutral OpenAI and Anthropic adapters server-side with structured schema validation, source citations, prompt versioning, timeouts/retries, token/cost logging and safe fallbacks. LLMs explain validated data; they do not calculate authoritative Greeks/P&L or fabricate quotes.
-10. Production backend deployment, auth/account isolation, secrets, observability, backups and security review.
+10. Production backend deployment, auth/account isolation, secrets, observability, backups and security review.\n11. Integrate a market-wide research catalogue for NSE/BSE equities, ETFs, mutual funds, gold, commodities, bonds, REITs and global securities with source-backed fundamentals, corporate actions, total-return history, currency conversion and screening.\n12. Upgrade portfolio analytics with transactions, dividends, fees/taxes, realised/unrealised P&L, asset allocation, benchmark comparisons, risk metrics and exportable statements.\n13. Build rule-based timing analysis from verified live/delayed market data: trend, breadth, volume, volatility, levels, event risk, entry zone, invalidation, risk/reward and explicit NO_TRADE; human review only.\n14. Add full self-learning track, practice datasets, quizzes, paper exercises, spaced revision and progress synced to an authenticated profile.
 
 ### New remaining gaps after the latest implementation
 
