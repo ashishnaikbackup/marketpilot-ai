@@ -49,7 +49,7 @@ The Worker rejects snapshots older than 15 minutes and quote timestamps older th
 - GET /api/v1/paper-bot/reports
 - POST /api/v1/paper-bot/run (requires Authorization: Bearer BOT_RUN_TOKEN and a normalized snapshot in { "snapshot": ... })
 
-Scheduled runner fetches MARKET_DATA_SNAPSHOT_URL?region=INDIA at 10:20 UTC weekdays and ?region=GLOBAL at 22:30 UTC weekdays. It stores successful and failed runs in bot_runs. These are scheduled windows, not a guarantee that every exchange is open; the adapter must handle holidays and global market calendars/DST.
+The Worker cron runs every five minutes on weekdays. It polls INDIA during 09:15–15:30 IST and GLOBAL every 15 minutes; it creates an India closing report at 10:20 UTC and a global closing report at 22:30 UTC. Each successful or failed run is recorded in bot_runs. This is scheduled polling, not tick-by-tick streaming. Exchange holidays, market calendars and global daylight-saving changes must be handled by the provider adapter.
 
 ## Cloudflare setup
 
