@@ -60,11 +60,9 @@ export default function PaperTradingBot(){
   const [maxPositions,setMaxPositions]=useState("5");
   const [watchlist,setWatchlist]=useState("NIFTY, BANKNIFTY, FINNIFTY, RELIANCE, TCS, INFY, AAPL, MSFT, SPY, QQQ");
   const [status,setStatus]=useState("Import a timestamped CSV to start. No live feed is connected.");
-  const [skipped,setSkipped]=useState<string[]>([]);
   const [busy,setBusy]=useState(false);
   const [report,setReport]=useState<Report|null>(null);
   const [source,setSource]=useState("User-imported CSV (unverified)");
-  const [lastScan,setLastScan]=useState("");
   const persistRows=(v:Row[])=>{setRows(v);localStorage.setItem(ROWS_KEY,JSON.stringify(v));};
   const persistTrades=(v:Trade[])=>{setTrades(v);localStorage.setItem(TRADES_KEY,JSON.stringify(v));};
   const latestTime=useMemo(()=>rows.map(r=>isoTime(r.timestamp)?.getTime()||0).reduce((a,b)=>Math.max(a,b),0),[rows]);
@@ -106,12 +104,12 @@ export default function PaperTradingBot(){
         trade={id:crypto.randomUUID(),symbol:`${symbol} ${chosen.expiry} ${chosen.optionType} ${chosen.strike}`,underlying:symbol,market:chosen.market,assetType:"OPTION",optionType:chosen.optionType,strike:chosen.strike,expiry:chosen.expiry,side:"BUY",quantity:qty,entry:mid,stop,target,mark:mid,pnl:0,status:"OPEN",openedAt:new Date().toISOString(),sourceTime:chosen.timestamp,thesis:`${bull?"Bullish":"Bearish"} underlying trend; 9/21 EMA alignment, RSI ${strength!.toFixed(1)}, volume ratio ${volRatio.toFixed(2)}x. Long option only; premium at mid assumed.`};
       } else if(bull && last.assetType!=="OPTION" && last.assetType!=="CE" && last.assetType!=="PE") {
         const stop=last.close-2*(range||last.close*.02),target=last.close+3*(last.close-stop),unit=last.assetType==="FUTURE"?last.lotSize:1,unitRisk=Math.max(.01,last.close-stop)*unit,units=Math.floor(cash*risk/unitRisk),qty=units*unit;
-        if(qty<1){skips.push(${symbol}: minimum unit/lot exceeds the virtual risk budget`);continue;}
+        if(qty<1){skips.push(`${symbol}: minimum unit/lot exceeds the virtual risk budget`);continue;}
         trade={id:crypto.randomUUID(),symbol,underlying:symbol,market:last.market,assetType:last.assetType,optionType:"",strike:0,expiry:"",side:"BUY",quantity:qty,entry:last.close,stop,target,mark:last.close,pnl:0,status:"OPEN",openedAt:new Date().toISOString(),sourceTime:last.timestamp,thesis:`Bullish trend; 9/21 EMA alignment, RSI ${strength!.toFixed(1)}, volume ratio ${volRatio.toFixed(2)}x. Simulated ${last.assetType} entry at last close.`};
       } else {skips.push(`${symbol}: signal found but no eligible long-only cash/ETF or liquid matching CE/PE contract`);continue;}
       next.unshift(trade);used.add(symbol);active+=1;notes.push(`PAPER BUY ${trade.symbol} · ${trade.quantity} units · assumed entry ${trade.entry.toFixed(2)}`);
     }
-    persistTrades(next);setSkipped(skips);setLastScan(new Date().toISOString());setStatus(`Scan complete. ${notes.length} trade events; ${skips.length} safeguards/no-entry reasons. No broker orders were sent.`);
+    persistTrades(next);setStatus(`Scan complete. ${notes.length} trade events; ${skips.length} safeguards/no-entry reasons. No broker orders were sent.`);
     const daily=makeReport(next,notes,skips,latestDate);setReport(daily);const savedReports=[daily,...reports.filter(x=>x.date!==daily.date)];setReports(savedReports);localStorage.setItem(REPORTS_KEY,JSON.stringify(savedReports));setBusy(false);
   }
   function makeReport(sourceTrades:Trade[],decisions:string[],skip:string[],asOf:string):Report{
@@ -120,7 +118,7 @@ export default function PaperTradingBot(){
   }
   function createReport(){const r=makeReport(trades,[],[],latestDate);setReport(r);const next=[r,...reports.filter(x=>x.date!==r.date)];setReports(next);localStorage.setItem(REPORTS_KEY,JSON.stringify(next));}
   function downloadReport(){if(!report)return;const text=[`MARKETPILOT AI — PAPER BOT DAILY REPORT`,`Date: ${report.date}`,`Generated: ${report.createdAt}`,`Data as of: ${report.dataAsOf||"not available"}`,`Data source: ${source} (unverified)`,`New paper trades: ${report.opened}`,`Closed paper trades: ${report.closed}`,`Wins / losses: ${report.wins} / ${report.losses}`,`Realised simulated P&L: ${money(report.realised)}`,`Open simulated P&L: ${money(report.openPnl)}`,`Decision log:`,...(report.decisions.length?report.decisions:["No new paper entries during this report."]),`Skipped / safeguards:`,...(report.skipped.length?report.skipped:["None recorded."]),`DISCLAIMER: Simulated only. User-imported prices are unverified. No live provider or broker is connected. Fees, slippage, taxes and market impact are not fully modelled.`].join("\n");const blob=new Blob([text],{type:"text/plain;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`marketpilot-paper-report-${report.date}.txt`;a.click();URL.revokeObjectURL(url);}
-  function clearBot(){if(!window.confirm("Delete imported bot data, simulated trades and saved bot reports from this browser?"))return;persistRows([]);persistTrades([]);setReports([]);localStorage.removeItem(REPORTS_KEY);setReport(null);setSkipped([]);setStatus("Local paper bot data cleared.");}
+  function clearBot(){if(!window.confirm("Delete imported bot data, simulated trades and saved bot reports from this browser?"))return;persistRows([]);persistTrades([]);setReports([]);localStorage.removeItem(REPORTS_KEY);setReport(null);setStatus("Local paper bot data cleared.");}
   const freshest=latestDate?freshLabel(latestDate):"No timestamp";
   return <div className="page-stack paper-bot">
     <div className="notice"><ShieldCheck size={17}/><div><strong>Simulation only · no broker · no live feed</strong><span>The bot can analyse timestamped files and create hypothetical trades. It cannot run in the background or fetch live prices in this free-only setup.</span></div><span className="notice-tag">PAPER BOT</span></div>
