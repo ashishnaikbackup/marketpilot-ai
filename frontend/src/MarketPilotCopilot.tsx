@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Bot, Send, Sparkles, ShieldAlert, BookOpen, TrendingUp, GitCompareArrows, Clock3 } from "lucide-react";
+import { Bot, Send, Sparkles, ShieldAlert, BookOpen, TrendingUp, GitCompareArrows, Clock3, Database } from "lucide-react";
 
 type Message = { role: "assistant" | "user"; text: string; title?: string };
 
@@ -8,10 +8,17 @@ const starters = [
   { icon: GitCompareArrows, label: "Compare CE vs PE", prompt: "Explain how to decide between buying a call and buying a put." },
   { icon: BookOpen, label: "Teach me option Greeks", prompt: "Teach me Delta, Gamma, Theta and Vega with simple examples." },
   { icon: Clock3, label: "Best time to trade", prompt: "Explain the best intraday time windows and when I should avoid trading." },
+  { icon: Database, label: "Analyse imported option chain", prompt: "Analyse my latest imported option chain and explain the positioning." },
 ];
 
 function answerFor(question: string): Message {
   const q = question.toLowerCase();
+  let imported: any = null;
+  try { imported = JSON.parse(localStorage.getItem("marketpilot.latestIndiaChain.v1") || "null"); } catch { imported = null; }
+  if (imported?.metrics && /imported|latest chain|option chain|pcr|open interest|oi positioning/.test(q)) {
+    const m = imported.metrics;
+    return { role: "assistant", title: imported.instrument + " · imported chain review", text: "I found a locally saved option-chain snapshot from " + imported.source + ".\n\n**Snapshot metrics**\n- Put/Call OI ratio: " + (m.pcr == null ? "not available" : Number(m.pcr).toFixed(3)) + "\n- Put/Call change-OI ratio: " + (m.pcrChange == null ? "not available" : Number(m.pcrChange).toFixed(3)) + "\n- Highest call OI strike: " + m.topCall + "\n- Highest put OI strike: " + m.topPut + "\n- Modelled max-pain strike: " + m.maxPain + "\n- Nearest ATM strike: " + m.atm + "\n- ATM CE/PE IV: " + (m.callIv == null ? "—" : Number(m.callIv).toFixed(2) + "%") + " / " + (m.putIv == null ? "—" : Number(m.putIv).toFixed(2) + "%") + "\n\n**Interpretation limits:** OI concentrations are not guaranteed support/resistance; PCR and max pain are not directional predictors. The source and timestamp are user-entered and unverified. This snapshot alone cannot justify buying CE or PE. Add spot trend, VWAP, breadth, volatility, expiry and a risk plan before any human-reviewed setup.\n\nThis is a local calculation from your imported rows, not a live exchange feed or a buy/sell signal." };
+  }
   if (/nifty|banknifty|finnifty|buy|sell|entry|call|put|ce|pe|signal|setup/.test(q)) {
     return { role: "assistant", title: "Market setup review · data gate", text: "I can help build and evaluate a trade plan, but I cannot honestly name a live CE/PE strike or entry right now: this workspace has no connected, authorised live NSE feed. The dashboard's sample values are demo data.\n\nFor a defensible setup, provide a timestamped underlying price series and option-chain snapshot with source, expiry, strike, CE/PE LTP, bid/ask, volume, OI, change in OI and IV. The analysis should then check:\n\n1. **Market regime:** trend, opening range, VWAP, breadth and India VIX.\n2. **Option selection:** expiry, ATM distance, spread, liquidity, IV and Greeks—not premium alone.\n3. **Trigger:** a pre-defined price level plus confirmation; no chasing.\n4. **Risk:** entry, invalidation/stop, target, lot size, fees, slippage and maximum rupee loss.\n5. **Decision:** bullish, bearish, neutral or **NO TRADE**.\n\nUntil verified data is connected, the correct live-trading answer is **NO TRADE**. I can still teach the method or analyse data you paste here." };
   }
@@ -45,8 +52,8 @@ export default function MarketPilotCopilot() {
 
   return <div className="copilot-layout">
     <section className="copilot-main panel">
-      <div className="copilot-head"><div className="copilot-avatar"><Bot size={22}/></div><div><h3>MarketPilot Copilot</h3><p>Research & learning assistant · rule-based preview</p></div><span className="copilot-status">ONLINE</span></div>
-      <div className="copilot-safety"><ShieldAlert size={16}/><span>No live feed or AI model is connected yet. This preview uses a transparent educational knowledge base; it does not generate live buy/sell calls.</span></div>
+      <div className="copilot-head"><div className="copilot-avatar"><Bot size={22}/></div><div><h3>MarketPilot Copilot</h3><p>Research & learning assistant · local data-aware preview</p></div><span className="copilot-status">ONLINE</span></div>
+      <div className="copilot-safety"><ShieldAlert size={16}/><span>No live feed or AI model is connected yet. This preview can explain concepts and read your locally imported option-chain snapshot; it does not generate live buy/sell calls.</span></div>
       <div className="copilot-messages" aria-live="polite">{messages.map((m,i)=><article key={i} className={m.role==="user"?"chat-message user-message":"chat-message assistant-message"}>{m.role==="assistant"&&<div className="message-icon"><Sparkles size={14}/></div>}<div className="message-body">{m.title&&<strong>{m.title}</strong>}<p>{m.text}</p></div></article>)}</div>
       <form className="copilot-input" onSubmit={submit}><input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Ask about markets, F&O, risk or a strategy…" aria-label="Ask MarketPilot Copilot"/><button type="submit" disabled={!draft.trim()} aria-label="Send message"><Send size={17}/></button></form>
       <div className="copilot-footnote">Educational research only · verify all data independently · no order execution</div>
