@@ -25,7 +25,7 @@ export default function BacktestLab() {
     if (values.some(v => !Number.isFinite(v) || v <= 0) || values.length < 22) {
       setError("Enter at least 22 positive closing prices, separated by commas or spaces."); return;
     }
-    if (!apiUrl.trim()) { setError("Enter your deployed MarketPilot API base URL first. The GitHub Pages site does not host the backend."); return; }
+    if (!apiUrl.trim()) { setError("Enter your deployed Cloudflare Worker API base URL first. GitHub Pages hosts only the static frontend."); return; }
     setLoading(true);
     try {
       const response = await fetch(apiUrl.replace(/\/$/, "") + "/api/v1/backtest/sma-crossover", {
@@ -45,7 +45,7 @@ export default function BacktestLab() {
     <section className="panel">
       <div className="panel-title"><div><h3>Connect your MarketPilot API</h3><p>Backend URL is separate from the static GitHub Pages dashboard</p></div><Activity size={18} className="muted-icon"/></div>
       <div className="calculator-fields">
-        <label className="span-two">API base URL<input value={apiUrl} onChange={e=>setApiUrl(e.target.value)} placeholder="https://your-marketpilot-api.onrender.com"/></label>
+        <label className="span-two">API base URL<input value={apiUrl} onChange={e=>setApiUrl(e.target.value)} placeholder="https://marketpilot-api.<your-account-subdomain>.workers.dev"/></label>
         <label>Fast moving average<input type="number" min="2" max="499" value={fast} onChange={e=>setFast(e.target.value)}/></label>
         <label>Slow moving average<input type="number" min="3" max="500" value={slow} onChange={e=>setSlow(e.target.value)}/></label>
         <label>Fee per position change (bps)<input type="number" min="0" max="500" value={fee} onChange={e=>setFee(e.target.value)}/></label>
