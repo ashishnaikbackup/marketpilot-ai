@@ -13,7 +13,7 @@ class DataQualityRequest(BaseModel):
     instrument: str = Field(min_length=1, max_length=40)
     source: str | None = None
     exchange: str | None = None
-    data_mode: Literal["live", "delayed", "eod", "historical", "demo"] = "demo"
+    data_mode: Literal["live", "delayed", "eod", "historical", "demo", "unavailable"] = "demo"
     observed_at: datetime | None = None
     required_fields: list[str] = Field(default_factory=lambda: [
         "underlying_price", "option_chain", "open_interest", "implied_volatility"
