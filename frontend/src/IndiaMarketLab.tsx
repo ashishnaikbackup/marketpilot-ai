@@ -39,7 +39,8 @@ export default function IndiaMarketLab(){
    <div className="calculator-fields">
     <label>Instrument<select value={instrument} onChange={e=>setInstrument(e.target.value)}><option>NIFTY</option><option>BANKNIFTY</option><option>FINNIFTY</option></select></label>
     <label>Underlying spot<input type="number" min="0.01" value={spot} onChange={e=>setSpot(e.target.value)}/></label>
-    <label>Expiry date<input type="date" value={expiry} onChange={e=>setExpiry(e.target.value)}/></label>\n    <label>Data source / provider<input value={source} onChange={e=>setSource(e.target.value)} placeholder="Name the source"/></label>
+    <label>Expiry date<input type="date" value={expiry} onChange={e=>setExpiry(e.target.value)}/></label>
+    <label>Data source / provider<input value={source} onChange={e=>setSource(e.target.value)} placeholder="Name the source"/></label>
     <label>Observation time<input type="datetime-local" value={observedAt} onChange={e=>setObservedAt(e.target.value)}/></label>
    </div>
    <label className="india-csv-label">Option-chain CSV<textarea rows={9} value={csv} onChange={e=>setCsv(e.target.value)} placeholder="strike,option_type,open_interest,change_oi,volume,ltp,iv,bid,ask&#10;25000,CE,120000,15000,45000,185,14.2,184.5,185.5&#10;25000,PE,135000,22000,51000,172,14.8,171.5,172.5"/></label>
