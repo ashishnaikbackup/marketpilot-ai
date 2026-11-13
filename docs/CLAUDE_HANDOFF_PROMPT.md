@@ -41,6 +41,11 @@ The user wants a functional, research-first financial intelligence platform. Ind
 - Market-data status endpoint explicitly reports no provider connected.
 - Research data-quality gate: `POST /api/v1/research/screen`, rejects demo, historical, stale, missing-timestamp, missing-source/exchange, incomplete and unvalidated inputs; default is NO_TRADE.
 - Provider-neutral normalized data contracts and async `MarketDataProvider` protocol in `backend/app/domain/market_data.py`; default `UnconfiguredMarketDataProvider` fails closed.
+- Descriptive option-chain analytics API for supplied rows (PCR, OI/change-in-OI, volume, OI concentration); does not fetch exchange data.
+- Bootstrap instrument catalogue with lot sizes and expiry calendars deliberately unset pending a verified instrument master.
+- Research candidate review gate requiring live/delayed freshness, provenance, at least two evidence points, invalidation, risk notes and reviewed rule ID; output is never a trade recommendation.
+- Educational SMA crossover backtest endpoint using supplied close series, fee/slippage assumptions and max drawdown.
+- Optional server-side OpenAI and Anthropic explainer endpoint with secret checks, timeout handling and no client-side API keys.
 - Pytest coverage for payoff, API validation, Greeks, research gates and unconfigured provider.
 
 **Delivery**
@@ -64,6 +69,15 @@ The user wants a functional, research-first financial intelligence platform. Ind
 8. Build scheduled pre-market, intraday, closing, weekly and monthly reports only after reliable data and scheduler/notification infrastructure exist.
 9. Add provider-neutral OpenAI and Anthropic adapters server-side with structured schema validation, source citations, prompt versioning, timeouts/retries, token/cost logging and safe fallbacks. LLMs explain validated data; they do not calculate authoritative Greeks/P&L or fabricate quotes.
 10. Production backend deployment, auth/account isolation, secrets, observability, backups and security review.
+
+### New remaining gaps after the latest implementation
+
+- No real market-data adapter or exchange entitlements are connected; never imply live data availability.
+- AI endpoint is optional and sends only caller-provided context; add structured output validation, prompt versions, privacy controls, token/cost telemetry and citation verification.
+- The SMA backtest is a toy baseline. Add proper bar timestamps, walk-forward splits, benchmark comparison, trade-level accounting, taxes/fees and bias controls before drawing conclusions.
+- Add persistent, authenticated server-side paper ledger and research storage with per-user isolation, migrations, backups and audit history.
+- Add scheduler/notifications only after deployment and persistence are configured.
+- Add a verified instrument master and holiday/expiry calendar from an authorised source; current catalogue contains no contract lot sizes.
 
 ### Non-negotiable rules
 
