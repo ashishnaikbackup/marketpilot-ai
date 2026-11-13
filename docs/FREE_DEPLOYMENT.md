@@ -60,7 +60,7 @@ The current app's holdings, trade journal, reports and Academy progress are brow
 
 - No NSE/BSE or global live market feed, option chain, broker integration or real-time trade timing.
 - No free hosting plan grants rights to redistribute exchange data. A licensed provider is still required.
-- No AI analyst calls are enabled in this Worker. AI model usage can incur costs and must be separately opted into.
+- AI chat is optional through the Workers AI binding and its free daily allowance. It is not a live market feed, trading signal or execution engine; without the binding, the endpoint returns a configuration error.
 - Browser-local records do not sync across devices and can be lost if browser storage is cleared. Export/backup before changing devices.
 - Workers Free has strict CPU and request limits; large analytics should run locally or in a separately budgeted service.
 
