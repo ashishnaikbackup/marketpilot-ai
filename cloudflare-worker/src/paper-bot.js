@@ -36,6 +36,9 @@ async function run(snapshot,env,trigger="manual"){
  const runId=id(),started=now(),decisions=[],instruments=new Map(snapshot.instruments.map(x=>[x.symbol,x])),contracts=new Map((snapshot.option_contracts||[]).map(x=>[x.contract_id,x]));
  let closed=0,opened=0,realized=0,unrealized=0;
  const positions=await env.DB.prepare("SELECT * FROM bot_positions WHERE region=? AND status='OPEN'").bind(region).all();
+ const openPositions=positions.results||[];
+ const existingSymbols=new Set(openPositions.filter(p=>p.asset_class!=="OPTION").map(p=>p.symbol));
+ const existingContracts=new Set(openPositions.filter(p=>p.asset_class==="OPTION").map(p=>p.instrument_id));
  for(const p of positions.results||[]){
   const q=p.asset_class==="OPTION"?contracts.get(p.instrument_id):instruments.get(p.symbol)?.quote;
   if(!fresh(q,nowMs)){decisions.push({symbol:p.symbol,action:"HOLD",reason:"No fresh two-sided quote; mark withheld."});continue;}
