@@ -63,7 +63,7 @@ The Worker cron runs every five minutes on weekdays. It polls INDIA during 09:15
    migrations_dir = "migrations"
 
 3. Apply cloudflare-worker/migrations/0001_paper_bot.sql to the remote database with Wrangler or the Cloudflare D1 console.
-4. Add Worker secrets BOT_READ_TOKEN (required by the dashboard to read positions/reports), BOT_RUN_TOKEN (manual run endpoint), and MARKET_DATA_API_TOKEN (if required by the provider). Enter BOT_READ_TOKEN in the dashboard; it is held in session storage for that browser tab.
+4. Add Worker secrets BOT_READ_TOKEN (required by the dashboard to read positions/reports), BOT_RUN_TOKEN (manual run endpoint), and MARKET_DATA_API_TOKEN (if required by the provider). Enter BOT_READ_TOKEN in the dashboard; it is held in session storage for that browser tab. For optional EOD Telegram notifications, also set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID as Worker secrets/variables. The bot token stays server-side.
 5. Configure Worker variable MARKET_DATA_SNAPSHOT_URL to your private normalized provider adapter. Never expose a vendor token in the Pages frontend.
 6. Add the cron triggers in cloudflare-worker/wrangler.toml to the deployed Worker.
 7. Keep BOT_READ_TOKEN enabled and restrict API access using Cloudflare Access or another authentication layer before storing private paper-trading activity. CORS is not authentication. Read endpoints require a bearer token; the dashboard holds that read token in session storage only. Do not use sensitive personal data in paper reports.
@@ -78,3 +78,12 @@ The GitHub deployment workflow currently skips deployment unless CLOUDFLARE_API_
 - No broker login, broker API key, order routing or real-money execution.
 - No mobile push, email or WhatsApp delivery; reports are available in the dashboard/API.
 - No multi-year strategy validation or independent audit of profitability.
+
+
+## Optional Telegram end-of-day messages
+
+Create a Telegram bot with BotFather, obtain its bot token, and obtain the destination chat ID. Store them only as Cloudflare Worker secrets/variables:
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+
+When configured, the Worker sends India and global end-of-day summaries only (not every five-minute poll). Messages include simulated entries/exits, scan counts, source/data mode and simulated P&L. If these settings are absent, reports remain available in the Auto Paper Trader dashboard/API. Never paste a Telegram bot token into GitHub source, the frontend, or chat.
