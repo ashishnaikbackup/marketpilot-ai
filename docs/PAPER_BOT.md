@@ -54,8 +54,15 @@ Scheduled runner fetches MARKET_DATA_SNAPSHOT_URL?region=INDIA at 10:20 UTC week
 ## Cloudflare setup
 
 1. Create a Cloudflare D1 database, e.g. marketpilot-paper-db.
-2. Add a D1 binding named exactly DB to the Worker.
-3. Apply cloudflare-worker/migrations/0001_paper_bot.sql to the remote database.
+2. Copy the database ID and add this binding to cloudflare-worker/wrangler.toml (replace the placeholder with your real D1 database ID):
+
+   [[d1_databases]]
+   binding = "DB"
+   database_name = "marketpilot-paper-db"
+   database_id = "YOUR_D1_DATABASE_ID"
+   migrations_dir = "migrations"
+
+3. Apply cloudflare-worker/migrations/0001_paper_bot.sql to the remote database with Wrangler or the Cloudflare D1 console.
 4. Add Worker secrets MARKET_DATA_API_TOKEN and BOT_RUN_TOKEN if required.
 5. Configure Worker variable MARKET_DATA_SNAPSHOT_URL to your private normalized provider adapter. Never expose a vendor token in the Pages frontend.
 6. Add the cron triggers in cloudflare-worker/wrangler.toml to the deployed Worker.
