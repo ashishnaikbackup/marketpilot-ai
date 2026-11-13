@@ -42,24 +42,60 @@ export default function MarketPilotCopilot() {
     { role: "assistant", title: "Your research desk is ready", text: "I’m MarketPilot’s research copilot. Ask me to explain a concept, compare F&O strategies, build a risk checklist or review what data is needed for a trade.\n\nI will distinguish verified data from assumptions—and say NO TRADE when evidence is missing." },
   ]);
   const [draft, setDraft] = useState("");
-  function send(text = draft) {
-    const clean = text.trim();
-    if (!clean) return;
-    setMessages((old) => [...old, { role: "user", text: clean }, answerFor(clean)]);
-    setDraft("");
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem("marketpilot.apiBaseUrl") || import.meta.env.VITE_API_BASE_URL || "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  function saveApiUrl() {
+    const value = apiUrl.trim().replace(/\/$/, "");
+    setApiUrl(value);
+    if (value) localStorage.setItem("marketpilot.apiBaseUrl", value);
+    else localStorage.removeItem("marketpilot.apiBaseUrl");
   }
-  function submit(e: FormEvent) { e.preventDefault(); send(); }
+  async function send(text = draft) {
+    const clean = text.trim();
+    if (!clean || loading) return;
+    const history = [...messages.slice(-8).map(m => ({ role: m.role, content: m.text })), { role: "user" as const, content: clean }];
+    setMessages(old => [...old, { role: "user", text: clean }]);
+    setDraft("");
+    setError("");
+    const base = apiUrl.trim().replace(/\/$/, "");
+    if (!base) {
+      setMessages(old => [...old, answerFor(clean)]);
+      return;
+    }
+    setLoading(true);
+    try {
+      let context = "";
+      try {
+        const saved = JSON.parse(localStorage.getItem("marketpilot.latestIndiaChain.v1") || "null");
+        if (saved?.metrics) context = JSON.stringify({instrument:saved.instrument,expiry:saved.expiry,source:saved.source,observedAt:saved.observedAt,metrics:saved.metrics});
+      } catch { context = ""; }
+      const response = await fetch(base + "/api/v1/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history, context })
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(typeof body.detail === "string" ? body.detail : "AI request failed. Check the Worker URL and AI binding.");
+      if (typeof body.answer !== "string" || !body.answer.trim()) throw new Error("The AI service returned an empty response.");
+      setMessages(old => [...old, { role: "assistant", title: "MarketPilot AI · Workers AI", text: body.answer }]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not reach the AI service.");
+      setMessages(old => [...old, { role: "assistant", title: "Local research fallback", text: answerFor(clean).text }]);
+    } finally { setLoading(false); }
+  }
+  function submit(e: FormEvent) { e.preventDefault(); void send(); }
 
   return <div className="copilot-layout">
     <section className="copilot-main panel">
-      <div className="copilot-head"><div className="copilot-avatar"><Bot size={22}/></div><div><h3>MarketPilot Copilot</h3><p>Research & learning assistant · local data-aware preview</p></div><span className="copilot-status">ONLINE</span></div>
-      <div className="copilot-safety"><ShieldAlert size={16}/><span>No live feed or AI model is connected yet. This preview can explain concepts and read your locally imported option-chain snapshot; it does not generate live buy/sell calls.</span></div>
+      <div className="copilot-head"><div className="copilot-avatar"><Bot size={22}/></div><div><h3>MarketPilot Copilot</h3><p>AI-assisted research · local educational fallback</p></div><span className="copilot-status">ONLINE</span></div>
+      <div className="copilot-safety"><ShieldAlert size={16}/><span>Live market data is not connected. Configure the free-tier Cloudflare Worker URL below to enable AI chat; without it, the local educational fallback is used. Neither mode generates live buy/sell calls.</span></div>
       <div className="copilot-messages" aria-live="polite">{messages.map((m,i)=><article key={i} className={m.role==="user"?"chat-message user-message":"chat-message assistant-message"}>{m.role==="assistant"&&<div className="message-icon"><Sparkles size={14}/></div>}<div className="message-body">{m.title&&<strong>{m.title}</strong>}<p>{m.text}</p></div></article>)}</div>
-      <form className="copilot-input" onSubmit={submit}><input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Ask about markets, F&O, risk or a strategy…" aria-label="Ask MarketPilot Copilot"/><button type="submit" disabled={!draft.trim()} aria-label="Send message"><Send size={17}/></button></form>
+      <form className="copilot-input" onSubmit={submit}><input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Ask about markets, F&O, risk or a strategy…" aria-label="Ask MarketPilot Copilot"/><button type="submit" disabled={!draft.trim()||loading} aria-label="Send message">{loading?<span className="copilot-spinner">…</span>:<Send size={17}/>}</button></form>\n      {error&&<div className="copilot-error">{error}</div>}
       <div className="copilot-footnote">Educational research only · verify all data independently · no order execution</div>
     </section>
     <aside className="copilot-side">
-      <section className="panel"><div className="panel-title"><div><h3>What I can help with</h3><p>Choose a starting point</p></div><Sparkles size={17}/></div><div className="copilot-starters">{starters.map(({icon:Icon,label,prompt})=><button key={label} onClick={()=>send(prompt)}><Icon size={17}/><span>{label}</span><span className="starter-arrow">↗</span></button>)}</div></section>
+      <section className="panel"><div className="panel-title"><div><h3>Connect AI research</h3><p>Paste your deployed Cloudflare Worker URL</p></div><Bot size={17}/></div><div className="copilot-connect"><input value={apiUrl} onChange={e=>setApiUrl(e.target.value)} placeholder="https://marketpilot-api.your-subdomain.workers.dev" aria-label="Cloudflare Worker API URL"/><button className="outline-button" onClick={saveApiUrl}>Save</button></div><p className="copilot-connect-note">Workers AI has a free daily inference allowance. Usage stops at the free limit on the Free plan; no paid upgrade is enabled.</p></section>\n      <section className="panel"><div className="panel-title"><div><h3>What I can help with</h3><p>Choose a starting point</p></div><Sparkles size={17}/></div><div className="copilot-starters">{starters.map(({icon:Icon,label,prompt})=><button key={label} onClick={()=>void send(prompt)}><Icon size={17}/><span>{label}</span><span className="starter-arrow">↗</span></button>)}</div></section>
       <section className="panel"><div className="panel-title"><div><h3>Live analysis requirements</h3><p>Before any specific trade setup</p></div><ShieldAlert size={17}/></div><ul className="copilot-checklist"><li>Authorised NSE market-data provider</li><li>Timestamped spot and option-chain data</li><li>Verified expiry and lot-size master</li><li>Spread, liquidity, IV and Greeks</li><li>Tested rules, costs and risk limits</li></ul><div className="copilot-no-trade">Missing evidence? The answer is NO TRADE.</div></section>
     </aside>
   </div>;
