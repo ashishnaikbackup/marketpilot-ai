@@ -15,12 +15,21 @@ Cloudflare's published Workers Free limits currently include 100,000 requests/da
 2. In the dashboard choose **Workers & Pages → Create → Worker**.
 3. Name it `marketpilot-api`.
 4. Open the Worker editor and replace its starter code with the contents of `cloudflare-worker/src/index.js`, then deploy.
-5. Your API base URL will look like `https://marketpilot-api.<your-account-subdomain>.workers.dev`.
+5. In **Worker → Settings → Bindings**, add a **Workers AI** binding named exactly `AI` (the repository's `wrangler.toml` also declares this binding for Wrangler deployments).\n6. Your API base URL will look like `https://marketpilot-api.<your-account-subdomain>.workers.dev`.
 6. Test `GET /api/v1/health`. It should return JSON with status `ok`.
 7. Open MarketPilot → Backtest Lab and paste that API base URL. The endpoint supports the SMA backtest. The other API routes are available for future frontend integration.
 
 No card or paid Render service is required for this architecture. Do not enable paid Cloudflare Workers or paid add-ons unless you deliberately choose to.
 
+
+
+## Optional AI Copilot (free allocation)
+
+The Worker includes `POST /api/v1/ai/chat`, using the Workers AI binding and the `@cf/google/gemma-4-26b-a4b-it` model. The model runs server-side; no AI key is exposed in the browser. The endpoint restricts message roles, message count and per-message length, and adds a fixed MarketPilot research policy that forbids fabricated quotes and unsupported CE/PE calls.
+
+Cloudflare currently publishes a 10,000-Neuron daily free allocation for Workers AI. On the Workers Free plan, inference stops when the free allowance is exceeded; keep the account on the Free plan and do not enable paid upgrades. Some other models require a paid plan, so do not change the configured model without checking current model eligibility. See the official [Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/) and [Workers AI setup guide](https://developers.cloudflare.com/workers-ai/get-started/workers-wrangler/).
+
+The Copilot sends recent chat messages and a compact summary of the locally imported option-chain snapshot to the Worker. Do not paste account credentials, personal identifiers, broker tokens or other secrets into chat. AI output is educational and may be wrong; it is not a trading signal or investment advice. The AI endpoint is public once deployed, so keep requests short and monitor usage in the Cloudflare dashboard. A daily allowance is not a guarantee of uninterrupted model capacity.
 
 ## India-first research workflow (current MVP)
 
