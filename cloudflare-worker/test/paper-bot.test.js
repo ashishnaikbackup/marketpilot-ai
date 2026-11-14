@@ -115,3 +115,26 @@ test("portfolio and equity endpoints require the read token and compute stats", 
   const eq = await (await route("/api/v1/paper-bot/equity?region=INDIA", "r")).json();
   assert.equal(eq.points[0].recorded_at, "2026-10-31", "points are returned oldest first for charting");
 });
+
+test("assistant answers only from stored bot data and refuses to guess when there is none", async () => {
+  const report = { data_mode: "eod", source: "twelvedata", observed_at: "2026-11-13T22:30:00Z", decisions: [{ action: "PAPER_BUY", symbol: "AAPL", quantity: 5, entry: 200, stop: 194, target: 212, risk_amount: 30, explanation: "Price above rising averages." }],
+    risk_exposure: { gross_exposure_pct: 10, max_gross_exposure_pct: 60, open_positions: 1, max_positions: 12, capital_at_risk_to_stops: 30, stale_marks: 0 }, next_session_watchlist: [{ symbol: "MSFT", bias: "BULLISH", momentum_pct: 2.1, note: "Needs fresh quote." }] };
+  const make = (withData) => ({ prepare: (sql) => ({ bind: () => ({ first: async () => {
+    if (!withData) return null;
+    if (sql.includes("bot_accounts")) return { starting_cash: 1000000 };
+    if (sql.includes("bot_runs")) return { completed_at: "2026-11-13T22:31:00Z", data_mode: "eod", report_json: JSON.stringify(report) };
+    return { equity: 1002000, cash: 900000, exposure: 102000, open_positions: 1, realized_pnl: 0, unrealized_pnl: 2000 };
+  }, all: async () => ({ results: [] }) }) }) });
+  const ask = (q, withData, token = "r") => paperBotRoute(new Request("https://unit.test/api/v1/paper-bot/ask", { method: "POST", headers: { Authorization: "Bearer " + token }, body: JSON.stringify({ question: q, region: "GLOBAL" }) }), { DB: make(withData), BOT_READ_TOKEN: "r" }, new URL("https://unit.test/api/v1/paper-bot/ask"));
+  assert.equal((await ask("why did you buy?", true, "bad")).status, 401);
+  const trade = await (await ask("Explain the latest trade", true)).json();
+  assert.equal(trade.topic, "latest_trades");
+  assert.match(trade.answer, /BOUGHT AAPL/);
+  assert.equal(trade.simulated, true);
+  assert.match((await (await ask("review my portfolio", true)).json()).answer, /simulated money/);
+  assert.match((await (await ask("what are the risks", true)).json()).answer, /10% of equity/);
+  assert.match((await (await ask("best opportunities", true)).json()).answer, /MSFT/);
+  const empty = await (await ask("what is happening in the market", false)).json();
+  assert.match(empty.answer, /no completed bot run/i);
+  assert.equal((await (await ask("tell me a joke", true)).json()).grounded, false);
+});

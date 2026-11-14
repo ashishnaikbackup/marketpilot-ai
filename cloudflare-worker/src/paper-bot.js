@@ -1,6 +1,7 @@
 import { hasBearer } from "./security.js";
 import { evaluate, STRATEGY_VERSION } from "./engine.js";
 import { fetchSnapshot, providerInfo } from "./providers.js";
+import { loadGrounding, answerQuestion } from "./assistant.js";
 const json=(x,status=200)=>new Response(JSON.stringify(x),{status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
 const error=(s,n=422)=>json({detail:s},n);
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
@@ -107,6 +108,22 @@ export async function paperBotRoute(request,env,url){
   const cols="id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json";
   const r=region?await env.DB.prepare("SELECT "+cols+" FROM bot_runs WHERE region=? ORDER BY started_at DESC LIMIT ?").bind(region,lim).all():await env.DB.prepare("SELECT "+cols+" FROM bot_runs ORDER BY started_at DESC LIMIT ?").bind(lim).all();
   return json({reports:(r.results||[]).map(x=>{let report={};try{report=JSON.parse(x.report_json||"{}");}catch{}return {...x,report_json:undefined,report};})});
+ }
+ if(request.method==="POST"&&path==="/api/v1/paper-bot/ask"){
+  const g=readGuard(request,env);if(g)return g;
+  let p;try{p=await request.json();}catch{return error("Send JSON like {\"question\":\"...\"}.");}
+  const q=typeof p?.question==="string"?p.question.trim():"";
+  if(!q||q.length>500)return error("Ask a question of 1 to 500 characters.");
+  const region=["INDIA","GLOBAL"].includes(String(p.region||"").toUpperCase())?String(p.region).toUpperCase():"INDIA";
+  const grounding=await loadGrounding(env,region),res=answerQuestion(q,grounding,providerInfo(env));
+  let phrased=null;
+  if(env.AI_CHAT_ENABLED==="true"&&env.AI?.run&&res.grounded){
+   try{
+    const out=await env.AI.run("@cf/google/gemma-4-26b-a4b-it",{messages:[{role:"system",content:"You rewrite a paper-trading data summary for a beginner in plain, friendly English in under 120 words. Use ONLY facts in the summary. Never add prices, news, predictions or advice. Say the money is simulated."},{role:"user",content:"Question: "+q+"\nSummary: "+res.answer}],max_tokens:300,temperature:0.1,stream:false,chat_template_kwargs:{enable_thinking:false}});
+    const a=out?.response??out?.choices?.[0]?.message?.content;if(typeof a==="string"&&a.trim())phrased=a.trim();
+   }catch{}
+  }
+  return json({...res,answer:phrased||res.answer,facts:res.answer,phrased_by_ai:Boolean(phrased),region});
  }
  if(request.method==="POST"&&path==="/api/v1/paper-bot/run"){
   if(!env?.DB)return error("D1 database is not configured.",503);

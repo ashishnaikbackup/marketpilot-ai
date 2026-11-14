@@ -72,6 +72,7 @@ export function clientId(request) {
 // Per-route request limits: [requests per minute, max body bytes].
 export function limitsFor(method, path) {
   if (path === "/api/v1/ai/chat") return { rpm: 10, maxBytes: 60_000 };
+  if (path === "/api/v1/paper-bot/ask") return { rpm: 20, maxBytes: 4_000 };
   if (path === "/api/v1/paper-bot/run") return { rpm: 6, maxBytes: 2_000_000 };
   if (path.startsWith("/api/v1/paper-bot/")) return { rpm: 60, maxBytes: 1_000 };
   if (method === "POST") return { rpm: 60, maxBytes: 1_000_000 };
