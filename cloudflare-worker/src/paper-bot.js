@@ -1,5 +1,7 @@
 import { hasBearer } from "./security.js";
-const json=(x,status=200)=>new Response(JSON.stringify(x),{status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type,Authorization"}});
+import { evaluate, STRATEGY_VERSION } from "./engine.js";
+import { fetchSnapshot, providerInfo } from "./providers.js";
+const json=(x,status=200)=>new Response(JSON.stringify(x),{status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
 const error=(s,n=422)=>json({detail:s},n);
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
 const now=()=>new Date().toISOString();
@@ -31,120 +33,116 @@ async function run(snapshot,env,trigger="manual"){
  if(!env?.DB)throw Error("D1 binding DB is not configured.");
  if(!snapshot||snapshot.schema_version!==1||!["INDIA","GLOBAL"].includes(snapshot.region)||!Array.isArray(snapshot.instruments)||snapshot.instruments.length>1000||!snapshot.source||!snapshot.observed_at)throw Error("Invalid normalized snapshot. See docs/PAPER_BOT.md for the schema.");
  const nowMs=Date.now(),stamp=Date.parse(snapshot.observed_at),age=nowMs-stamp;
- if(!Number.isFinite(stamp)||age< -60000||age>900000||!["live","delayed"].includes(snapshot.data_mode))return {status:"skipped",reason:"Data is missing, future-dated, older than 15 minutes or not live/delayed.",data_age_seconds:Number.isFinite(age)?Math.round(age/1000):null};
- const region=snapshot.region,account=await env.DB.prepare("SELECT * FROM bot_accounts WHERE region=?").bind(region).first();
- if(!account)throw Error("Paper account is missing. Apply the D1 migration first.");
- const runId=id(),started=now(),decisions=[],instruments=new Map(snapshot.instruments.map(x=>[x.symbol,x])),contracts=new Map((snapshot.option_contracts||[]).map(x=>[x.contract_id,x]));
- let closed=0,opened=0,realized=0,unrealized=0;
- const positions=await env.DB.prepare("SELECT * FROM bot_positions WHERE region=? AND status='OPEN'").bind(region).all();
- const openPositions=positions.results||[];
- const existingSymbols=new Set(openPositions.filter(p=>p.asset_class!=="OPTION").map(p=>p.symbol));
- const existingContracts=new Set(openPositions.filter(p=>p.asset_class==="OPTION").map(p=>p.instrument_id));
- for(const p of positions.results||[]){
-  const q=p.asset_class==="OPTION"?contracts.get(p.instrument_id):instruments.get(p.symbol)?.quote;
-  if(!fresh(q,nowMs)){decisions.push({symbol:p.symbol,action:"HOLD",reason:"No fresh two-sided quote; mark withheld."});continue;}
-  const mark=q.bid,pnl=(mark-p.entry_price)*p.quantity*p.lot_size;
-  unrealized+=pnl;
-  await env.DB.prepare("UPDATE bot_positions SET last_price=?,last_observed_at=? WHERE id=?").bind(mark,snapshot.observed_at,p.id).run();
-  const exit=mark<=p.stop_price?"STOP":mark>=p.target_price?"TARGET":(nowMs-Date.parse(p.opened_at))/86400000>=10?"TIME_EXIT":null;
-  if(exit){await env.DB.prepare("UPDATE bot_positions SET status='CLOSED',exit_price=?,closed_at=?,realized_pnl=?,exit_reason=? WHERE id=?").bind(mark,now(),pnl,exit,p.id).run();closed++;realized+=pnl;decisions.push({symbol:p.symbol,action:"CLOSE",reason:exit,price:mark,pnl:Number(pnl.toFixed(2))});}
- }
- const accountAfter=await env.DB.prepare("SELECT COALESCE(SUM(realized_pnl),0) AS pnl FROM bot_positions WHERE region=? AND status='CLOSED'").bind(region).first();
- await env.DB.prepare("UPDATE bot_accounts SET realized_pnl=?,updated_at=? WHERE region=?").bind(Number(accountAfter?.pnl||0),now(),region).run();
- const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM bot_positions WHERE region=? AND status='OPEN'").bind(region).first();
- let slots=Math.max(0,12-Number(count?.n||0));
- const equity=Number(account.starting_cash)+Number(accountAfter?.pnl||0)+unrealized;
- const candidates=[];
- for(const i of snapshot.instruments){
-  if(!i||!i.symbol||!["EQUITY","ETF","FUTURE"].includes(i.asset_class))continue;
-  const lotSize=i.asset_class==="FUTURE"?i.lot_size:1;
-  if(!Number.isInteger(lotSize)||lotSize<1||(i.asset_class==="FUTURE"&&(!i.instrument_id||!i.expiry||!Number.isFinite(Date.parse(i.expiry))||Date.parse(i.expiry)<=nowMs))){decisions.push({symbol:i.symbol,action:"SKIP",reason:"Future contract ID, expiry or lot size is missing/invalid."});continue;}
-  const s=trend(i);if(s.side!=="BULLISH")continue;
-  if(!fresh(i.quote,nowMs)){decisions.push({symbol:i.symbol,action:"SKIP",reason:"Fresh bid/ask unavailable."});continue;}
-  if(existingSymbols.has(i.symbol))continue;
-  const entry=i.quote.ask,stop=entry*.97,target=entry*1.06,risk=equity*.0025,qty=Math.floor(Math.min(risk/((entry-stop)*lotSize),equity*.08/(entry*lotSize)));
-  if(qty<1){decisions.push({symbol:i.symbol,action:"SKIP",reason:"Below minimum size under risk budget."});continue;}
-  candidates.push({i,s,entry,stop,target,qty,lotSize,score:s.momentum});
- }
- candidates.sort((a,b)=>b.score-a.score);
- for(const x of candidates.slice(0,slots)){
-  const pid=id();await env.DB.prepare("INSERT INTO bot_positions (id,region,symbol,instrument_id,asset_class,side,option_type,strike,expiry,quantity,lot_size,entry_price,last_price,stop_price,target_price,status,opened_at,last_observed_at,source,run_id,thesis,exit_reason,realized_pnl) VALUES (?,?,?,?,?,'LONG',NULL,NULL,?,?,?,?,?,?,?,'OPEN',?,?,?,?,?,NULL,0)")
-   .bind(pid,region,x.i.symbol,x.i.instrument_id||x.i.symbol,x.i.asset_class,x.i.asset_class==="FUTURE"?x.i.expiry:null,x.qty,x.lotSize,x.entry,x.entry,x.stop,x.target,now(),snapshot.observed_at,snapshot.source,runId,x.s.reason).run();
-  opened++;decisions.push({symbol:x.i.symbol,action:"PAPER_BUY",asset_class:x.i.asset_class,quantity:x.qty,lot_size:x.lotSize,entry:Number(x.entry.toFixed(4)),stop:Number(x.stop.toFixed(4)),target:Number(x.target.toFixed(4)),reason:x.s.reason});
- }
- const signals=new Map(snapshot.instruments.map(i=>[i.symbol,trend(i)])),optionPicks=[];
- for(const o of snapshot.option_contracts||[]){
-  const s=signals.get(o.underlying);if(!s||!["BULLISH","BEARISH"].includes(s.side)||!o.contract_id||!o.symbol||!fresh(o,nowMs))continue;
-  const right=region==="INDIA"?(s.side==="BULLISH"?"CE":"PE"):(s.side==="BULLISH"?"CALL":"PUT"),expiry=Date.parse(region==="INDIA"?o.expiry+"T15:30:00+05:30":o.expiry+"T23:59:59Z"),dte=(expiry-nowMs)/86400000,mid=(o.bid+o.ask)/2,underlyingQuote=instruments.get(o.underlying)?.quote;
-  if(!fresh(underlyingQuote,nowMs)||!Number.isFinite(expiry)||o.option_type!==right||!finite(o.strike)||!Number.isInteger(o.lot_size)||o.lot_size<1||!finite(o.delta)||Math.abs(o.delta)<.35||Math.abs(o.delta)>.65||!finite(o.iv)||o.iv<=0||o.iv>1.5||!Number.isInteger(o.open_interest)||o.open_interest<(region==="INDIA"?500:100)||!Number.isInteger(o.volume)||o.volume<(region==="INDIA"?50:10)||dte<7||dte>(region==="INDIA"?45:60)||mid<=0||(o.ask-o.bid)/mid>(region==="INDIA"?.025:.05))continue;
-  if(existingContracts.has(o.contract_id))continue;
-  optionPicks.push({o,s,rank:Math.abs(Math.abs(o.delta)-.5)+(o.ask-o.bid)/mid});
- }
- optionPicks.sort((a,b)=>a.rank-b.rank);
- let optionOpened=0;
- for(const {o,s} of optionPicks.slice(0,Math.min(4,slots-opened))){
-  const entry=o.ask,stop=entry*.7,target=entry*1.45,lot=o.lot_size;
-  if(entry*lot*.3>equity*.0025||entry*lot>equity*.08){decisions.push({symbol:o.symbol,action:"SKIP",reason:"One-lot option risk exceeds portfolio limit."});continue;}
-  const pid=id();await env.DB.prepare("INSERT INTO bot_positions (id,region,symbol,instrument_id,asset_class,side,option_type,strike,expiry,quantity,lot_size,entry_price,last_price,stop_price,target_price,status,opened_at,last_observed_at,source,run_id,thesis,exit_reason,realized_pnl) VALUES (?,?,?,?,?,'LONG',?,?,?,?,?,?,?,?,?,'OPEN',?,?,?,?,?,NULL,0)")
-   .bind(pid,region,o.symbol,o.contract_id,"OPTION",o.option_type,o.strike,o.expiry,1,lot,entry,entry,stop,target,now(),snapshot.observed_at,snapshot.source,runId,s.reason+" Underlying trend selects "+o.option_type+"; long premium only.").run();
-  optionOpened++;decisions.push({symbol:o.symbol,action:"PAPER_BUY",asset_class:"OPTION",option_type:o.option_type,strike:o.strike,expiry:o.expiry,quantity:1,lot_size:lot,entry:Number(entry.toFixed(4)),stop:Number(stop.toFixed(4)),target:Number(target.toFixed(4)),reason:s.reason+" Contract passed spread, liquidity, expiry and delta filters."});
- }
- opened+=optionOpened;
- const report={run_id:runId,region,currency:region==="INDIA"?"INR":"USD",trigger,source:snapshot.source,data_mode:snapshot.data_mode,observed_at:snapshot.observed_at,started_at:started,completed_at:now(),scanned:snapshot.instruments.length,option_contracts_seen:(snapshot.option_contracts||[]).length,opened,closed,realized_this_run:Number(realized.toFixed(2)),unrealized_estimate:Number(unrealized.toFixed(2)),decisions,notes:["Experimental rule-based paper simulation; not a validated strategy or investment advice.","No broker orders are sent. Long-only equity/ETF/futures and long-premium option positions only.","Equity uses ask for entry and bid for mark/exit; fees, taxes, market impact and corporate actions are excluded.","No fresh quote means no new trade and no fabricated mark."]};
- await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(runId,region,trigger,snapshot.source,snapshot.data_mode,snapshot.observed_at,started,report.completed_at,"completed",report.scanned,opened,closed,report.realized_this_run,JSON.stringify(report)).run();
+ if(!Number.isFinite(stamp)||age< -60000||age>900000||!["live","delayed","eod"].includes(snapshot.data_mode))return {status:"skipped",reason:"Data is missing, future-dated, older than 15 minutes or not live/delayed/eod.",data_age_seconds:Number.isFinite(age)?Math.round(age/1000):null};
+ const region=snapshot.region;
+ const account=await env.DB.prepare("SELECT * FROM bot_accounts WHERE region=?").bind(region).first();
+ if(!account)throw Error("Paper account is missing. Apply the D1 migrations first.");
+ const open=((await env.DB.prepare("SELECT * FROM bot_positions WHERE region=? AND status='OPEN'").bind(region).all()).results)||[];
+ const closed=((await env.DB.prepare("SELECT strategy,realized_pnl FROM bot_positions WHERE region=? AND status='CLOSED'").bind(region).all()).results)||[];
+ const runId=id(),started=now();
+ const r=evaluate({snapshot,account:{starting_cash:Number(account.starting_cash)},open,closedHistory:closed.map(x=>({strategy:x.strategy||"legacy",net_pnl:Number(x.realized_pnl||0)})),nowMs});
+ const stamped=now(),db=env.DB,stmts=[];
+ for(const m of r.marks)stmts.push(db.prepare("UPDATE bot_positions SET last_price=?,last_observed_at=? WHERE id=?").bind(m.last_price,m.observed_at,m.id));
+ for(const x of r.exits)stmts.push(db.prepare("UPDATE bot_positions SET status='CLOSED',exit_price=?,closed_at=?,realized_pnl=?,gross_pnl=?,exit_fees=?,holding_days=?,exit_reason=? WHERE id=?").bind(x.exit_price,stamped,x.net_pnl,x.gross_pnl,x.exit_fees,x.holding_days,x.exit_reason,x.id));
+ for(const e of r.entries)stmts.push(db.prepare("INSERT INTO bot_positions (id,region,symbol,instrument_id,asset_class,side,option_type,strike,expiry,quantity,lot_size,entry_price,last_price,stop_price,target_price,status,opened_at,last_observed_at,source,run_id,thesis,exit_reason,realized_pnl,strategy,exchange,order_type,risk_amount,capital_allocated,entry_fees,slippage_bps,price_basis,explanation) VALUES (?,?,?,?,?,'LONG',?,?,?,?,?,?,?,?,?,'OPEN',?,?,?,?,?,NULL,0,?,?,?,?,?,?,?,?,?)")
+  .bind(id(),region,e.symbol,e.instrument_id,e.asset_class,e.option_type,e.strike,e.expiry,e.quantity,e.lot_size,e.entry_price,e.entry_price,e.stop_price,e.target_price,stamped,snapshot.observed_at,snapshot.source,runId,e.thesis,e.strategy,e.exchange,e.order_type,e.risk_amount,e.capital_allocated,e.entry_fees,e.slippage_bps,e.price_basis,e.explanation));
+ const q=r.snapshotRow;
+ stmts.push(db.prepare("UPDATE bot_accounts SET realized_pnl=?,updated_at=? WHERE region=?").bind(q.realized_pnl,stamped,region));
+ stmts.push(db.prepare("INSERT INTO bot_equity_snapshots (id,region,recorded_at,data_mode,equity,cash,exposure,realized_pnl,unrealized_pnl,open_positions,run_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)").bind(id(),region,stamped,snapshot.data_mode,q.equity,q.cash,q.exposure,q.realized_pnl,q.unrealized_pnl,q.open_positions,runId));
+ const report={run_id:runId,trigger,started_at:started,completed_at:stamped,status:"completed",scanned:snapshot.instruments.length,opened:r.entries.length,closed:r.exits.length,realized_this_run:r.report.portfolio.realized_this_run,unrealized_estimate:r.report.portfolio.unrealized_pnl,option_contracts_seen:(snapshot.option_contracts||[]).length,...r.report};
+ stmts.push(db.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(runId,region,trigger,snapshot.source,snapshot.data_mode,snapshot.observed_at,started,stamped,"completed",report.scanned,report.opened,report.closed,report.realized_this_run,JSON.stringify(report)));
+ await db.batch(stmts);
  return report;
 }
+function stats(rows,snaps){
+ const net=rows.map(x=>Number(x.realized_pnl||0)),wins=net.filter(x=>x>0),losses=net.filter(x=>x<0);
+ const gw=wins.reduce((a,b)=>a+b,0),gl=-losses.reduce((a,b)=>a+b,0);
+ let peak=-Infinity,maxDD=0;for(const s of [...snaps].reverse()){peak=Math.max(peak,s.equity);if(peak>0)maxDD=Math.min(maxDD,s.equity/peak-1);}
+ return {closed_trades:rows.length,wins:wins.length,losses:losses.length,win_rate_pct:rows.length?Number((wins.length/rows.length*100).toFixed(1)):null,net_realized_pnl:Number(net.reduce((a,b)=>a+b,0).toFixed(2)),profit_factor:gl>0?Number((gw/gl).toFixed(2)):null,avg_win:wins.length?Number((gw/wins.length).toFixed(2)):null,avg_loss:losses.length?Number((-gl/losses.length).toFixed(2)):null,avg_holding_days:rows.length?Number((rows.reduce((a,b)=>a+Number(b.holding_days||0),0)/rows.length).toFixed(2)):null,max_drawdown_pct:Number((maxDD*100).toFixed(2))};
+}
+const readGuard=(request,env)=>{
+ if(!env?.DB)return error("D1 database is not configured.",503);
+ if(!env.BOT_READ_TOKEN)return error("Paper bot read access is disabled until BOT_READ_TOKEN is configured.",503);
+ if(!hasBearer(request,env.BOT_READ_TOKEN))return error("Valid paper bot read token required.",401);
+ return null;
+};
+const regionParam=url=>{const r=(url.searchParams.get("region")||"").toUpperCase();return ["INDIA","GLOBAL"].includes(r)?r:null;};
+const limitParam=(url,def,max)=>{const n=parseInt(url.searchParams.get("limit")||"",10);return Number.isInteger(n)&&n>0?Math.min(n,max):def;};
 export async function paperBotRoute(request,env,url){
  const path=url.pathname;
- if(request.method==="GET"&&path==="/api/v1/paper-bot/status")return json({configured:Boolean(env?.DB),feed_configured:Boolean(env?.MARKET_DATA_SNAPSHOT_URL),mode:"paper_only",strategy_version:"trend-options-v1",schedule_utc:["Every 5 minutes during India cash/F&O session (09:15–15:30 IST)","Every 15 minutes for global market coverage (provider session-aware)","India EOD report at 10:20 UTC; global EOD report at 22:30 UTC"],message:!env?.DB?"D1 database is not configured.":!env?.MARKET_DATA_SNAPSHOT_URL?"Normalized licensed market-data adapter is not configured.":"Bot services are configured; verify provider entitlements and data quality."});
+ if(request.method==="GET"&&path==="/api/v1/paper-bot/status"){
+  const info=providerInfo(env);
+  return json({configured:Boolean(env?.DB),feed_configured:info.configured,provider:info,mode:"paper_only",strategy_version:STRATEGY_VERSION,
+   schedule_utc:["India EOD run 10:20 UTC (15:50 IST), Mon-Fri","Global EOD run 22:30 UTC, Mon-Fri","Intraday runs every 5-15 minutes only when a live/delayed snapshot adapter is configured"],
+   message:!env?.DB?"D1 database is not configured.":!info.configured?info.message:"Bot services are configured; verify provider entitlements and data quality."});
+ }
  if(request.method==="GET"&&path==="/api/v1/paper-bot/positions"){
-  if(!env?.DB)return error("D1 database is not configured.",503);
-  if(!env.BOT_READ_TOKEN)return error("Paper bot read access is disabled until BOT_READ_TOKEN is configured.",503);
-  if(!hasBearer(request,env.BOT_READ_TOKEN))return error("Valid paper bot read token required.",401);
-  const region=url.searchParams.get("region"),r=region?await env.DB.prepare("SELECT * FROM bot_positions WHERE region=? ORDER BY opened_at DESC LIMIT 200").bind(region).all():await env.DB.prepare("SELECT * FROM bot_positions ORDER BY opened_at DESC LIMIT 200").all();
+  const g=readGuard(request,env);if(g)return g;
+  const region=regionParam(url),lim=limitParam(url,200,500);
+  const r=region?await env.DB.prepare("SELECT * FROM bot_positions WHERE region=? ORDER BY opened_at DESC LIMIT ?").bind(region,lim).all():await env.DB.prepare("SELECT * FROM bot_positions ORDER BY opened_at DESC LIMIT ?").bind(lim).all();
   return json({positions:r.results||[],mode:"paper_only"});
  }
+ if(request.method==="GET"&&path==="/api/v1/paper-bot/portfolio"){
+  const g=readGuard(request,env);if(g)return g;
+  const region=regionParam(url)||"INDIA";
+  const account=await env.DB.prepare("SELECT * FROM bot_accounts WHERE region=?").bind(region).first();
+  if(!account)return error("Paper account not found. Apply D1 migrations.",404);
+  const closed=((await env.DB.prepare("SELECT realized_pnl,holding_days FROM bot_positions WHERE region=? AND status='CLOSED'").bind(region).all()).results)||[];
+  const snaps=((await env.DB.prepare("SELECT * FROM bot_equity_snapshots WHERE region=? ORDER BY recorded_at DESC LIMIT 500").bind(region).all()).results)||[];
+  const latest=snaps[0]||null;
+  return json({region,mode:"paper_only",currency:region==="INDIA"?"INR":"USD",starting_capital:Number(account.starting_cash),latest_snapshot:latest,
+   equity:latest?latest.equity:Number(account.starting_cash),cash:latest?latest.cash:Number(account.starting_cash),
+   total_pnl:latest?Number((latest.equity-Number(account.starting_cash)).toFixed(2)):0,
+   stats:stats(closed,snaps),has_history:snaps.length>0});
+ }
+ if(request.method==="GET"&&path==="/api/v1/paper-bot/equity"){
+  const g=readGuard(request,env);if(g)return g;
+  const region=regionParam(url)||"INDIA",lim=limitParam(url,200,1000);
+  const r=await env.DB.prepare("SELECT recorded_at,data_mode,equity,cash,exposure,realized_pnl,unrealized_pnl,open_positions FROM bot_equity_snapshots WHERE region=? ORDER BY recorded_at DESC LIMIT ?").bind(region,lim).all();
+  return json({region,points:(r.results||[]).slice().reverse()});
+ }
  if(request.method==="GET"&&path==="/api/v1/paper-bot/reports"){
-  if(!env?.DB)return error("D1 database is not configured.",503);
-  if(!env.BOT_READ_TOKEN)return error("Paper bot read access is disabled until BOT_READ_TOKEN is configured.",503);
-  if(!hasBearer(request,env.BOT_READ_TOKEN))return error("Valid paper bot read token required.",401);
-  const r=await env.DB.prepare("SELECT id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json FROM bot_runs ORDER BY started_at DESC LIMIT 50").all();
-  return json({reports:(r.results||[]).map(x=>({...x,report:JSON.parse(x.report_json||"{}")}))});
+  const g=readGuard(request,env);if(g)return g;
+  const region=regionParam(url),lim=limitParam(url,50,200);
+  const cols="id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json";
+  const r=region?await env.DB.prepare("SELECT "+cols+" FROM bot_runs WHERE region=? ORDER BY started_at DESC LIMIT ?").bind(region,lim).all():await env.DB.prepare("SELECT "+cols+" FROM bot_runs ORDER BY started_at DESC LIMIT ?").bind(lim).all();
+  return json({reports:(r.results||[]).map(x=>{let report={};try{report=JSON.parse(x.report_json||"{}");}catch{}return {...x,report_json:undefined,report};})});
  }
  if(request.method==="POST"&&path==="/api/v1/paper-bot/run"){
   if(!env?.DB)return error("D1 database is not configured.",503);
   if(!hasBearer(request,env.BOT_RUN_TOKEN))return error("Valid server-side BOT_RUN_TOKEN required.",401);
-  try{const p=await request.json();return json(await run(p.snapshot,env,"manual"));}catch(e){return error(e instanceof Error?e.message:"Invalid paper-bot request.");}
+  try{const p=await request.json();return json(await run(p.snapshot,env,"manual"));}catch(e){return error(e instanceof Error?e.message:"Paper bot run failed.",422);}
  }
  return null;
 }
+async function logSkipped(env,region,trigger,reason){
+ const at=now();
+ await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+  .bind(id(),region,trigger,"unavailable","unavailable",at,at,now(),"skipped",0,0,0,0,JSON.stringify({status:"skipped",stance:"NO_TRADE",region,reason:String(reason).slice(0,300),inactive_reason:String(reason).slice(0,300),notes:["Data unavailable: the bot did nothing and invented nothing."]})).run();
+}
+// Which regions to run at this cron tick. EOD providers only run once per day at the EOD slot.
+export function regionsFor(event,env){
+ const t=event.scheduledTime,utc=new Date(t),hour=utc.getUTCHours(),minute=utc.getUTCMinutes(),weekday=utc.getUTCDay()>=1&&utc.getUTCDay()<=5;
+ const ist=new Date(t+330*60000),istMin=ist.getUTCHours()*60+ist.getUTCMinutes(),indiaDay=ist.getUTCDay()>=1&&ist.getUTCDay()<=5;
+ const indiaEod=hour===10&&minute===20&&indiaDay,globalEod=hour===22&&minute===30&&weekday;
+ if(providerInfo(env).data_mode==="eod")return [...(indiaEod?[{region:"INDIA",eod:true}]:[]),...(globalEod?[{region:"GLOBAL",eod:true}]:[])];
+ const out=[];
+ if((indiaDay&&istMin>=555&&istMin<=930)||indiaEod)out.push({region:"INDIA",eod:indiaEod});
+ if(minute%15===0||globalEod)out.push({region:"GLOBAL",eod:globalEod});
+ return out;
+}
 export async function scheduledPaperBot(event,env){
- if(!env?.DB||!env?.MARKET_DATA_SNAPSHOT_URL)return;
- const utc=new Date(event.scheduledTime),hour=utc.getUTCHours(),minute=utc.getUTCMinutes();
- const ist=new Date(event.scheduledTime+330*60000),istMinutes=ist.getUTCHours()*60+ist.getUTCMinutes();
- const indiaWeekday=ist.getUTCDay()>=1&&ist.getUTCDay()<=5;
- const indiaSession=indiaWeekday&&istMinutes>=555&&istMinutes<=930;
- const runIndia=indiaSession||(hour===10&&minute===20);
- const runGlobal=minute%15===0;
- const tasks=[];
- if(runIndia)tasks.push("INDIA");
- if(runGlobal)tasks.push("GLOBAL");
- for(const region of tasks){
-  const eod=(region==="INDIA"&&hour===10&&minute===20)||(region==="GLOBAL"&&hour===22&&minute===30);
+ if(!env?.DB||!providerInfo(env).configured)return;
+ for(const {region,eod} of regionsFor(event,env)){
+  const trigger=eod?"scheduled_eod":"scheduled_intraday";
   try{
-   const u=new URL(env.MARKET_DATA_SNAPSHOT_URL);u.searchParams.set("region",region);u.searchParams.set("purpose",eod?"paper-trading-eod":"paper-trading-intraday");
-   const r=await fetch(u.toString(),{headers:env.MARKET_DATA_API_TOKEN?{Authorization:"Bearer "+env.MARKET_DATA_API_TOKEN}:{}});
-   if(!r.ok)throw Error("Provider adapter HTTP "+r.status);
-   const result=await run(await r.json(),env,eod?"scheduled_eod":"scheduled_intraday");
+   const result=await run(await fetchSnapshot(env,region,eod?"paper_eod":"paper_intraday"),env,trigger);
    if(eod)await telegramNotify(env,region,result);
-   if(result?.status==="skipped"){
-    const at=now();await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?,?,?,?,?,?,?,0,0,0,0,?)")
-     .bind(id(),region,eod?"scheduled_eod":"scheduled_intraday","unavailable","unavailable",at,at,now(),"skipped",JSON.stringify(result)).run();
-   }
+   if(result?.status==="skipped")await logSkipped(env,region,trigger,result.reason||"Snapshot skipped.");
   }catch(e){
-   const at=now();await env.DB.prepare("INSERT INTO bot_runs (id,region,trigger,source,data_mode,observed_at,started_at,completed_at,status,scanned,opened,closed,realized_pnl,report_json) VALUES (?,?,?, ?,?,?,?,?,?,0,0,0,0,?)")
-    .bind(id(),region,eod?"scheduled_eod":"scheduled_intraday","unavailable","unavailable",at,at,now(),"skipped",JSON.stringify({status:"skipped",region,reason:e instanceof Error?e.message:"Market data unavailable."})).run();
-   if(eod)await telegramNotify(env,region,{status:"skipped",region,completed_at:at,reason:e instanceof Error?e.message:"Market data unavailable.",decisions:[]});
+   const reason=e instanceof Error?e.message:"Provider unavailable.";
+   try{await logSkipped(env,region,trigger,reason);}catch{}
+   if(eod)await telegramNotify(env,region,{status:"skipped",region,completed_at:now(),reason});
   }
  }
 }
