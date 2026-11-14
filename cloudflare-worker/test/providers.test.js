@@ -57,3 +57,11 @@ test("EOD providers only run at the EOD slot on weekdays", () => {
   assert.deepEqual(regionsFor(at("2026-11-13T12:15:00Z"), env), []);
   assert.deepEqual(regionsFor(at("2026-11-14T22:30:00Z"), env), []); // Saturday
 });
+
+test("provider is auto-detected from which credentials exist, with the adapter URL taking priority", () => {
+  assert.equal(providerInfo({ TWELVEDATA_API_KEY: "k" }).provider, "twelvedata");
+  assert.equal(providerInfo({ TWELVEDATA_API_KEY: "k" }).configured, true);
+  assert.equal(providerInfo({ TWELVEDATA_API_KEY: "k", MARKET_DATA_SNAPSHOT_URL: "https://a.example" }).provider, "adapter_url");
+  assert.match(providerInfo({ TWELVEDATA_API_KEY: "k" }).message, /non-display/);
+  assert.deepEqual(providerInfo({ TWELVEDATA_API_KEY: "k" }).regions, ["GLOBAL"]);
+});

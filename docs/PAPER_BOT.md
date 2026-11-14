@@ -21,7 +21,7 @@ Required root fields:
 - schema_version: 1
 - region: INDIA or GLOBAL
 - source: provider/adapter name
-- data_mode: live or delayed (not demo, historical or eod)
+- data_mode: live, delayed or eod (never demo or historical). `eod` snapshots are end-of-day closes: the bot trades cash equities/ETFs once a day at modelled fills, labels them `eod_close_with_modelled_slippage`, and does not trade options because EOD data has no two-sided option quotes. Snapshots must be no more than 15 minutes old when received.
 - observed_at: ISO-8601 timestamp with timezone
 - instruments: up to 1,000 instrument objects
 - option_contracts: optional array of option contracts

@@ -34,6 +34,15 @@ This is a source-level review of the current frontend, Cloudflare Worker, GitHub
 - CE/PE comparison must show assumptions and risks; if current verified data is missing, the correct state is NO TRADE.
 - No automatic orders, guaranteed returns, or personalised investment advice.
 
+## Audit results (2026-11-14)
+
+- **Git history secret scan:** all 324 commits on all refs searched for AWS, GitHub, OpenAI/Anthropic-style, Slack, Telegram and private-key patterns, and for sensitive filenames. **No secrets found.** Only `backend/.env.example` and `frontend/.env.example` were ever committed, and both hold placeholders. A gitleaks workflow now repeats this on every push and weekly.
+- **Python dependencies:** `pip-audit` found a vulnerable `pytest` (dev dependency). Bumped to 9.0.3+; re-audit reports no known vulnerabilities. `pip-audit` now runs in CI.
+- **npm dependencies:** `npm audit` reports 0 vulnerabilities for the frontend and the Worker. CI now fails on high-severity advisories. Dependabot is enabled for npm, pip and GitHub Actions.
+- **Worker hardening added:** CORS limited to an allowlist (`ALLOWED_ORIGINS`, default GitHub Pages and localhost) instead of `*`; the preflight now permits the `Authorization` header (previously the dashboard's token requests would have been blocked by browsers); constant-time bearer-token comparison; per-route rate limits and request-size limits; generic 500 errors that do not leak internals; a separate read token (`BOT_READ_TOKEN`) and run token (`BOT_RUN_TOKEN`).
+- **Limits of the rate limiter:** it is per Worker instance and best effort. For hard guarantees add a Cloudflare rate-limiting rule.
+- **Not done:** external penetration test; verification of the deployed Worker's secrets (requires your Cloudflare account).
+
 ## Known remaining work
 
-A full security sign-off still requires a secret scan, dependency audit, deployed Worker configuration review, Cloudflare rate-limit setup, and an external security test. A licensed live market-data provider and server-side market-data pipeline are also not present.
+Licensed NSE data and option chains, deployed-Worker verification, Cloudflare rate-limiting rule, enabling GitHub secret scanning/push protection in repository settings, and an external security test. See [STATUS.md](STATUS.md).

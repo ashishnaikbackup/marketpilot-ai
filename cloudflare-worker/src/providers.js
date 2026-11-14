@@ -6,7 +6,8 @@ export const DEFAULT_GLOBAL_WATCHLIST = "SPY:ETF,QQQ:ETF,AAPL,MSFT,NVDA,AMZN,GOO
 export function providerName(env) {
   const n = String(env?.MARKET_DATA_PROVIDER || "").trim().toLowerCase();
   if (n) return n;
-  return env?.MARKET_DATA_SNAPSHOT_URL ? "adapter_url" : "none";
+  if (env?.MARKET_DATA_SNAPSHOT_URL) return "adapter_url";
+  return env?.TWELVEDATA_API_KEY ? "twelvedata" : "none";
 }
 
 export function providerInfo(env) {
@@ -17,7 +18,7 @@ export function providerInfo(env) {
       provider: "twelvedata", configured: hasKey, data_mode: "eod", intraday: false,
       regions: ["GLOBAL"].concat(env?.TWELVEDATA_INDIA_SYMBOLS ? ["INDIA"] : []),
       message: hasKey
-        ? "Twelve Data adapter configured for end-of-day closes. Free plan covers US markets only and is for personal, non-display use; India needs a plan that includes NSE/BSE."
+        ? "Twelve Data adapter configured for end-of-day closes (US markets). Per Twelve Data's pricing page the free plan is US-only and for internal, non-display use, so confirm your plan's terms before showing prices to others. NSE/BSE are not listed on that page; India needs a provider or plan you have confirmed covers it."
         : "Set the TWELVEDATA_API_KEY Worker secret to enable the Twelve Data adapter.",
     };
   }
