@@ -25,7 +25,7 @@ function d1(sqlite) {
     },
   };
 }
-const migrate = (sqlite) => { for (const f of ["0001_paper_bot.sql", "0002_paper_bot_v2.sql"]) sqlite.exec(readFileSync(new URL("../migrations/" + f, import.meta.url), "utf8")); };
+const migrate = (sqlite) => { for (const f of ["0001_paper_bot.sql", "0002_paper_bot_v2.sql", "0003_live_data_learning.sql"]) sqlite.exec(readFileSync(new URL("../migrations/" + f, import.meta.url), "utf8")); };
 
 const up = Array.from({ length: 60 }, (_, i) => ({ timestamp: new Date(Date.now() - (60 - i) * 86400000).toISOString(), close: 100 + i * 0.5 + (i % 3 === 0 ? -1.5 : 0.5) }));
 const last = up.at(-1).close;

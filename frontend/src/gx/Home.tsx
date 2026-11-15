@@ -44,6 +44,7 @@ export default function Home({ desk, go }: { desk: Desk; go: (t: "trader" | "mar
     <div className="gx-card">
       <div className="gx-h"><h2>Data status</h2><span className={"gx-chip " + (provider?.configured ? (provider.data_mode === "live" ? "ok" : "warn") : "bad")}><i className="gx-dot" />{provider?.configured ? modeLabel(provider.data_mode) : "Not connected"}</span></div>
       <p className="gx-p">{provider?.message || "Connect to the API to see which market-data source is active."}</p>
+      {provider?.by_region && (["INDIA", "GLOBAL"] as const).map((r) => <div className="gx-row" key={r}><div><strong>{r === "INDIA" ? "India" : "International"}</strong><small>{provider.by_region![r].configured ? provider.by_region![r].provider : "Not connected"}</small></div><div className="r">{provider.by_region![r].configured ? modeLabel(provider.by_region![r].data_mode) : "—"}</div></div>)}
       {provider?.configured && provider.data_mode === "eod" && <div className="gx-note"><AlertTriangle size={16} /><span>This data is end-of-day, not live. The bot only trades once per day and never uses end-of-day closes as live prices.</span></div>}
     </div>
 

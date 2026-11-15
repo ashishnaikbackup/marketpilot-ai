@@ -1,6 +1,8 @@
 import { hasBearer } from "./security.js";
 import { evaluate, STRATEGY_VERSION } from "./engine.js";
-import { fetchSnapshot, providerInfo } from "./providers.js";
+import { fetchSnapshot, providerInfo, regionProvider } from "./providers.js";
+import { learn } from "./learning.js";
+import { bestTimes } from "./timing.js";
 import { loadGrounding, answerQuestion } from "./assistant.js";
 const json=(x,status=200)=>new Response(JSON.stringify(x),{status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
 const error=(s,n=422)=>json({detail:s},n);
@@ -39,9 +41,9 @@ async function run(snapshot,env,trigger="manual"){
  const account=await env.DB.prepare("SELECT * FROM bot_accounts WHERE region=?").bind(region).first();
  if(!account)throw Error("Paper account is missing. Apply the D1 migrations first.");
  const open=((await env.DB.prepare("SELECT * FROM bot_positions WHERE region=? AND status='OPEN'").bind(region).all()).results)||[];
- const closed=((await env.DB.prepare("SELECT strategy,realized_pnl FROM bot_positions WHERE region=? AND status='CLOSED'").bind(region).all()).results)||[];
+ const closed=((await env.DB.prepare("SELECT strategy,symbol,closed_at,realized_pnl FROM bot_positions WHERE region=? AND status='CLOSED'").bind(region).all()).results)||[];
  const runId=id(),started=now();
- const r=evaluate({snapshot,account:{starting_cash:Number(account.starting_cash)},open,closedHistory:closed.map(x=>({strategy:x.strategy||"legacy",net_pnl:Number(x.realized_pnl||0)})),nowMs});
+ const r=evaluate({snapshot,account:{starting_cash:Number(account.starting_cash)},open,closedHistory:closed.map(x=>({strategy:x.strategy||"legacy",net_pnl:Number(x.realized_pnl||0)})),learning:learn(closed.map(x=>({strategy:x.strategy||"legacy",symbol:x.symbol,closed_at:x.closed_at,net_pnl:Number(x.realized_pnl||0)})),nowMs),nowMs});
  const stamped=now(),db=env.DB,stmts=[];
  for(const m of r.marks)stmts.push(db.prepare("UPDATE bot_positions SET last_price=?,last_observed_at=? WHERE id=?").bind(m.last_price,m.observed_at,m.id));
  for(const x of r.exits)stmts.push(db.prepare("UPDATE bot_positions SET status='CLOSED',exit_price=?,closed_at=?,realized_pnl=?,gross_pnl=?,exit_fees=?,holding_days=?,exit_reason=? WHERE id=?").bind(x.exit_price,stamped,x.net_pnl,x.gross_pnl,x.exit_fees,x.holding_days,x.exit_reason,x.id));
@@ -109,6 +111,22 @@ export async function paperBotRoute(request,env,url){
   const r=region?await env.DB.prepare("SELECT "+cols+" FROM bot_runs WHERE region=? ORDER BY started_at DESC LIMIT ?").bind(region,lim).all():await env.DB.prepare("SELECT "+cols+" FROM bot_runs ORDER BY started_at DESC LIMIT ?").bind(lim).all();
   return json({reports:(r.results||[]).map(x=>{let report={};try{report=JSON.parse(x.report_json||"{}");}catch{}return {...x,report_json:undefined,report};})});
  }
+ if(request.method==="GET"&&path==="/api/v1/paper-bot/insights"){
+  const g=readGuard(request,env);if(g)return g;
+  const region=regionParam(url)||"INDIA";
+  const closed=((await env.DB.prepare("SELECT strategy,symbol,closed_at,realized_pnl FROM bot_positions WHERE region=? AND status='CLOSED'").bind(region).all()).results)||[];
+  const learning=learn(closed.map(x=>({strategy:x.strategy||"legacy",symbol:x.symbol,closed_at:x.closed_at,net_pnl:Number(x.realized_pnl||0)})));
+  const syms=((await env.DB.prepare("SELECT symbol,COUNT(*) n FROM bot_intraday WHERE region=? GROUP BY symbol ORDER BY n DESC LIMIT 6").bind(region).all()).results)||[];
+  const timing=[];
+  for(const s of syms){
+   const bars=((await env.DB.prepare("SELECT slot_ts,open,close FROM bot_intraday WHERE region=? AND symbol=? ORDER BY slot_ts").bind(region,s.symbol).all()).results)||[];
+   const daily=((await env.DB.prepare("SELECT day,close FROM bot_candles WHERE region=? AND symbol=? ORDER BY day").bind(region,s.symbol).all()).results)||[];
+   timing.push(bestTimes(s.symbol,bars,daily));
+  }
+  const cov=((await env.DB.prepare("SELECT COUNT(DISTINCT symbol) n FROM bot_candles WHERE region=?").bind(region).first())||{}).n||0;
+  return json({region,mode:"paper_only",learning,timing,stored_symbols:cov,
+   disclaimer:"Learning adjusts the paper bot's own risk from its own results. Timing is a historical tendency, not a prediction or advice."});
+ }
  if(request.method==="POST"&&path==="/api/v1/paper-bot/ask"){
   const g=readGuard(request,env);if(g)return g;
   let p;try{p=await request.json();}catch{return error("Send JSON like {\"question\":\"...\"}.");}
@@ -142,10 +160,11 @@ export function regionsFor(event,env){
  const t=event.scheduledTime,utc=new Date(t),hour=utc.getUTCHours(),minute=utc.getUTCMinutes(),weekday=utc.getUTCDay()>=1&&utc.getUTCDay()<=5;
  const ist=new Date(t+330*60000),istMin=ist.getUTCHours()*60+ist.getUTCMinutes(),indiaDay=ist.getUTCDay()>=1&&ist.getUTCDay()<=5;
  const indiaEod=hour===10&&minute===20&&indiaDay,globalEod=hour===22&&minute===30&&weekday;
- if(providerInfo(env).data_mode==="eod")return [...(indiaEod?[{region:"INDIA",eod:true}]:[]),...(globalEod?[{region:"GLOBAL",eod:true}]:[])];
  const out=[];
- if((indiaDay&&istMin>=555&&istMin<=930)||indiaEod)out.push({region:"INDIA",eod:indiaEod});
- if(minute%15===0||globalEod)out.push({region:"GLOBAL",eod:globalEod});
+ const iMode=regionProvider(env,"INDIA").data_mode,gMode=regionProvider(env,"GLOBAL").data_mode;
+ const iLive=iMode==="live"||iMode==="live_or_delayed_per_adapter",gLive=gMode==="live"||gMode==="live_or_delayed_per_adapter";
+ if(iLive?((indiaDay&&istMin>=555&&istMin<=930)||indiaEod):indiaEod)out.push({region:"INDIA",eod:indiaEod});
+ if(gLive?(minute%15===0||globalEod):globalEod)out.push({region:"GLOBAL",eod:globalEod});
  return out;
 }
 export async function scheduledPaperBot(event,env){

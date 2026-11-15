@@ -1,3 +1,5 @@
+import { fetchUpstoxSnapshot } from "./upstox.js";
+
 // Market-data provider adapters. Each adapter returns a normalized snapshot (docs/PAPER_BOT.md).
 // Rules: never invent data, never label end-of-day data as live, never put vendor keys in URLs or logs.
 
@@ -10,22 +12,43 @@ export function providerName(env) {
   return env?.TWELVEDATA_API_KEY ? "twelvedata" : "none";
 }
 
-export function providerInfo(env) {
-  const name = providerName(env);
+const UPSTOX_INFO = {
+  provider: "upstox", configured: true, intraday: true,
+  message: "Upstox Analytics Token (read-only): live NSE quotes, option chains with OI, IV and Greeks. Orders are never placed. Confirm your Upstox plan covers the data you display.",
+};
+
+// Which provider serves a region. India prefers Upstox when its token is set; everything else follows the old rules.
+export function regionProvider(env, region) {
+  const explicit = String(env?.MARKET_DATA_PROVIDER || "").trim().toLowerCase();
+  if (region === "INDIA" && env?.UPSTOX_ACCESS_TOKEN && (!explicit || explicit === "upstox")) return { ...UPSTOX_INFO, data_mode: "live" };
+  const name = explicit && explicit !== "upstox" ? explicit : env?.MARKET_DATA_SNAPSHOT_URL ? "adapter_url" : env?.TWELVEDATA_API_KEY ? "twelvedata" : "none";
   if (name === "twelvedata") {
-    const hasKey = Boolean(env?.TWELVEDATA_API_KEY);
+    const hasKey = Boolean(env?.TWELVEDATA_API_KEY), covers = region === "GLOBAL" || Boolean(env?.TWELVEDATA_INDIA_SYMBOLS);
     return {
-      provider: "twelvedata", configured: hasKey, data_mode: "eod", intraday: false,
-      regions: ["GLOBAL"].concat(env?.TWELVEDATA_INDIA_SYMBOLS ? ["INDIA"] : []),
+      provider: "twelvedata", configured: hasKey && covers, data_mode: "eod", intraday: false,
       message: hasKey
-        ? "Twelve Data adapter configured for end-of-day closes (US markets). Per Twelve Data's pricing page the free plan is US-only and for internal, non-display use, so confirm your plan's terms before showing prices to others. NSE/BSE are not listed on that page; India needs a provider or plan you have confirmed covers it."
+        ? (covers ? "" : "Twelve Data's free plan has no NSE/BSE. ") + "Twelve Data adapter configured for end-of-day closes (US markets). Per Twelve Data's pricing page the free plan is US-only and for internal, non-display use, so confirm your plan's terms before showing prices to others."
         : "Set the TWELVEDATA_API_KEY Worker secret to enable the Twelve Data adapter.",
     };
   }
-  if (name === "adapter_url") {
-    return { provider: "adapter_url", configured: Boolean(env?.MARKET_DATA_SNAPSHOT_URL), data_mode: "live_or_delayed_per_adapter", intraday: true, regions: ["INDIA", "GLOBAL"], message: "Custom normalized snapshot adapter. Entitlements and data mode are asserted by the adapter and are not independently verified." };
-  }
-  return { provider: null, configured: false, data_mode: "unavailable", intraday: false, regions: [], message: "No market-data provider configured. The bot stays inactive and invents nothing." };
+  if (name === "adapter_url") return { provider: "adapter_url", configured: Boolean(env?.MARKET_DATA_SNAPSHOT_URL), data_mode: "live_or_delayed_per_adapter", intraday: true, message: "Custom normalized snapshot adapter. Entitlements and data mode are asserted by the adapter and are not independently verified." };
+  return { provider: null, configured: false, data_mode: "unavailable", intraday: false, message: "No market-data provider configured. The bot stays inactive and invents nothing." };
+}
+
+export function providerInfo(env) {
+  const by_region = { INDIA: regionProvider(env, "INDIA"), GLOBAL: regionProvider(env, "GLOBAL") };
+  const regions = Object.keys(by_region).filter((r) => by_region[r].configured);
+  const configuredOnes = regions.map((r) => by_region[r]);
+  const modes = [...new Set(configuredOnes.map((x) => x.data_mode))];
+  const single = (by_region.INDIA.configured ? by_region.INDIA : by_region.GLOBAL.configured ? by_region.GLOBAL : by_region.GLOBAL);
+  return {
+    provider: configuredOnes.length ? [...new Set(configuredOnes.map((x) => x.provider))].join("+") : single.provider,
+    configured: regions.length > 0,
+    data_mode: configuredOnes.length ? (modes.length === 1 ? modes[0] : "mixed") : single.data_mode,
+    intraday: configuredOnes.some((x) => x.intraday), regions,
+    message: configuredOnes.length ? [...new Set(configuredOnes.map((x) => x.message))].join(" ") : single.message,
+    by_region,
+  };
 }
 
 export function parseWatchlist(text) {
@@ -84,7 +107,8 @@ async function fetchAdapterUrl(env, region, purpose, fetchImpl) {
 }
 
 export async function fetchSnapshot(env, region, purpose, fetchImpl = fetch) {
-  const name = providerName(env);
+  const name = regionProvider(env, region).provider;
+  if (name === "upstox") return fetchUpstoxSnapshot(env, region, purpose, fetchImpl);
   if (name === "twelvedata") return fetchTwelveData(env, region, fetchImpl);
   if (name === "adapter_url") return fetchAdapterUrl(env, region, purpose, fetchImpl);
   throw new Error("No market-data provider configured.");

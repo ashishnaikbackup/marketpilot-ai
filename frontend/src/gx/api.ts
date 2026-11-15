@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { demoEquity, demoPortfolio, demoPositions, demoReports, demoStatus } from "./demo";
+import { demoInsights, demoEquity, demoPortfolio, demoPositions, demoReports, demoStatus } from "./demo";
 
 export const KEY = "marketpilot-paperbot-api-v1"; // same key the earlier screens used, so saved settings carry over
 export type Region = "INDIA" | "GLOBAL";
@@ -42,7 +42,11 @@ export async function call<T>(s: Settings, path: string, init?: RequestInit): Pr
   return data as T;
 }
 
-export type Provider = { provider: string | null; configured: boolean; data_mode: string; message: string; regions?: Region[] };
+export type RegionProvider = { provider: string | null; configured: boolean; data_mode: string; intraday: boolean; message: string };
+export type Provider = { provider: string | null; configured: boolean; data_mode: string; message: string; regions?: Region[]; by_region?: Record<Region, RegionProvider> };
+export type TimingSlot = { slot: string; samples: number; avg_return_pct: number | null; up_share_pct: number | null; t_stat: number | null };
+export type Timing = { symbol: string; reliable: boolean; best_buy_slot: TimingSlot | null; best_sell_slot: TimingSlot | null; slots: TimingSlot[]; weekdays: { weekday: string; samples: number; avg_return_pct: number | null; up_share_pct: number | null }[]; sample_bars: number; note: string };
+export type Insights = { learning: { ready: boolean; total_trades: number; rules: string; strategies: Record<string, { trades: number; win_rate_pct: number | null; avg_net_pnl: number | null; net_pnl: number; risk_multiplier: number; note: string }>; cooldowns: Record<string, { until: string; reason: string }> }; timing: Timing[]; stored_symbols: number; disclaimer: string };
 export type Status = { configured: boolean; feed_configured: boolean; provider?: Provider; mode: string; strategy_version: string; schedule_utc: string[]; message: string };
 export type Stats = { closed_trades: number; wins: number; losses: number; win_rate_pct: number | null; net_realized_pnl: number; profit_factor: number | null; avg_win: number | null; avg_loss: number | null; avg_holding_days: number | null; max_drawdown_pct: number };
 export type Portfolio = { region: Region; currency: string; starting_capital: number; equity: number; cash: number; total_pnl: number; stats: Stats; has_history: boolean; latest_snapshot: { exposure: number; open_positions: number; realized_pnl: number; unrealized_pnl: number; recorded_at: string } | null };
@@ -69,14 +73,14 @@ export type EquityPoint = { recorded_at: string; equity: number; cash: number };
 
 export type Desk = {
   settings: Settings; region: Region; demo: boolean; loading: boolean; error: string; connected: boolean; needsToken: boolean; updated: string;
-  status: Status | null; portfolio: Portfolio | null; positions: Position[]; reports: Report[]; equity: EquityPoint[]; refresh: () => void;
+  status: Status | null; portfolio: Portfolio | null; positions: Position[]; reports: Report[]; equity: EquityPoint[]; insights: Insights | null; refresh: () => void;
 };
 
 export function useDesk(settings: Settings, region: Region): Desk {
-  const [state, setState] = useState<Omit<Desk, "settings" | "region" | "demo" | "refresh">>({ loading: false, error: "", connected: false, needsToken: false, updated: "", status: null, portfolio: null, positions: [], reports: [], equity: [] });
+  const [state, setState] = useState<Omit<Desk, "settings" | "region" | "demo" | "refresh">>({ loading: false, error: "", connected: false, needsToken: false, updated: "", status: null, portfolio: null, positions: [], reports: [], equity: [], insights: null });
   const refresh = useCallback(() => {
     if (!settings.api) { // no backend yet: show clearly labelled sample data so the app can be explored
-      setState({ loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status: demoStatus, portfolio: demoPortfolio(region), positions: demoPositions(region), reports: demoReports(region), equity: demoEquity(region) });
+      setState({ loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status: demoStatus, portfolio: demoPortfolio(region), positions: demoPositions(region), reports: demoReports(region), equity: demoEquity(region), insights: demoInsights(region) });
       return;
     }
     let cancelled = false;
@@ -84,15 +88,16 @@ export function useDesk(settings: Settings, region: Region): Desk {
     (async () => {
       try {
         const status = await call<Status>(settings, "/api/v1/paper-bot/status");
-        if (!settings.token) { if (!cancelled) setState({ loading: false, error: "", connected: true, needsToken: true, updated: new Date().toISOString(), status, portfolio: null, positions: [], reports: [], equity: [] }); return; }
+        if (!settings.token) { if (!cancelled) setState({ loading: false, error: "", connected: true, needsToken: true, updated: new Date().toISOString(), status, portfolio: null, positions: [], reports: [], equity: [], insights: null }); return; }
         const q = "?region=" + region;
-        const [portfolio, positions, reports, equity] = await Promise.all([
+        const [portfolio, positions, reports, equity, insights] = await Promise.all([
           call<Portfolio>(settings, "/api/v1/paper-bot/portfolio" + q),
           call<{ positions: Position[] }>(settings, "/api/v1/paper-bot/positions" + q + "&limit=300"),
           call<{ reports: Report[] }>(settings, "/api/v1/paper-bot/reports" + q + "&limit=60"),
           call<{ points: EquityPoint[] }>(settings, "/api/v1/paper-bot/equity" + q + "&limit=300"),
+          call<Insights>(settings, "/api/v1/paper-bot/insights" + q).catch(() => null),
         ]);
-        if (!cancelled) setState({ loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status, portfolio, positions: positions.positions, reports: reports.reports, equity: equity.points });
+        if (!cancelled) setState({ loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status, portfolio, positions: positions.positions, reports: reports.reports, equity: equity.points, insights });
       } catch (e) {
         if (!cancelled) setState((s) => ({ ...s, loading: false, connected: false, needsToken: e instanceof ApiError && e.status === 401, error: e instanceof Error ? e.message : "Something went wrong." }));
       }

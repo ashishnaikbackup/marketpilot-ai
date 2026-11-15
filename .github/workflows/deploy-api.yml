@@ -56,10 +56,11 @@ jobs:
           BOT_RUN_TOKEN: ${{ secrets.BOT_RUN_TOKEN }}
           MARKET_DATA_API_TOKEN: ${{ secrets.MARKET_DATA_API_TOKEN }}
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+          UPSTOX_ACCESS_TOKEN: ${{ secrets.UPSTOX_ACCESS_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          for name in BOT_READ_TOKEN BOT_RUN_TOKEN MARKET_DATA_API_TOKEN TWELVEDATA_API_KEY TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID; do
+          for name in BOT_READ_TOKEN BOT_RUN_TOKEN MARKET_DATA_API_TOKEN TWELVEDATA_API_KEY UPSTOX_ACCESS_TOKEN TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID; do
             value="${!name}"
             if [ -n "$value" ]; then
               printf '%s' "$value" | npx wrangler secret put "$name" --config wrangler.generated.toml >/dev/null

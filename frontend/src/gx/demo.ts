@@ -1,5 +1,6 @@
 // Built-in SAMPLE data so the app can be explored before a backend exists.
 // Everything here is invented for illustration and is always labelled DEMO in the UI.
+import type { Insights, Region } from "./api";
 import type { EquityPoint, Portfolio, Position, Report, ReportBody, Status } from "./api";
 
 const day = 86400000;
@@ -59,6 +60,13 @@ export function demoReports(region: "INDIA" | "GLOBAL"): Report[] {
   const mk = (id: string, d: number): Report => ({ id, region, trigger: "demo", source: "built-in sample", data_mode: "demo", observed_at: iso(d), started_at: iso(d), completed_at: iso(d), status: "completed", scanned: 8, opened: d < 1 ? 1 : 0, closed: d < 1 ? 1 : 0, realized_pnl: d < 1 ? (region === "INDIA" ? 640 : 41) : 0, report: demoBody(region) });
   return [mk("demo-1", 0.1), mk("demo-2", 1.1), mk("demo-3", 2.1)];
 }
+
+export const demoInsights = (region: Region): Insights => ({
+  stored_symbols: 0, disclaimer: "Sample data.",
+  learning: { ready: false, total_trades: 3, rules: "Learning only adjusts position risk between 0.5x and 1.2x and pauses a symbol after repeated losses. Hard risk limits never move.",
+    strategies: { "trend-momentum-long": { trades: 3, win_rate_pct: 66.7, avg_net_pnl: 410, net_pnl: 1230, risk_multiplier: 1, note: "Only 3 closed trade(s); the bot needs 10 before it changes anything." } }, cooldowns: {} },
+  timing: [{ symbol: region === "INDIA" ? "NIFTY" : "SPY", reliable: false, best_buy_slot: null, best_sell_slot: null, slots: [], weekdays: [], sample_bars: 0, note: "Sample: real timing statistics appear after the live feed has stored history." }],
+});
 
 const A: [RegExp, string][] = [
   [/trade|bought|buy|why|latest/, "BOUGHT RELIANCE ×10 at ₹1,450. Stop ₹1,406.50, target ₹1,537, risk ₹435. Why: price above rising 20/50-day averages; RSI and 5-session momentum confirm. (Sample answer)"],

@@ -1,6 +1,10 @@
+import Insights from "./Insights";
 import { modeLabel, pctText, tone, when, type Desk } from "./api";
 
 export default function Markets({ desk }: { desk: Desk }) {
+  return <><MarketsBody desk={desk} /><Insights desk={desk} /></>;
+}
+function MarketsBody({ desk }: { desk: Desk }) {
   const latest = desk.reports.find((r) => r.status === "completed"), b = latest?.report;
   if (!b) return <div className="gx-card gx-empty"><strong>No market data yet</strong><p>Markets show what the bot saw in its last run. Nothing is invented. {desk.status?.provider && !desk.status.provider.configured ? desk.status.provider.message : "Data appears after the first completed run."}</p></div>;
   const idx = b.market_overview?.indices || [], br = b.market_overview?.breadth;

@@ -48,10 +48,13 @@ The bot invents nothing. Without a data source it stays idle and says so.
 
 | Option | Covers | Mode | Notes |
 |---|---|---|---|
-| **Twelve Data** (`TWELVEDATA_API_KEY`) | US stocks and ETFs (`GLOBAL_WATCHLIST`, default SPY, QQQ, AAPL, MSFT, NVDA, AMZN, GOOGL, META) | **End of day** | Free Basic plan is US-only, 8 requests/minute, 800/day, and per Twelve Data's pricing page "internal non-display usage only". Check their terms before showing prices to other people. |
-| **Snapshot adapter** (`MARKET_DATA_SNAPSHOT_URL`, `MARKET_DATA_API_TOKEN`) | Anything you can license, including NSE and option chains | live or delayed, as your adapter states | You (or a vendor) provide a small server that returns the normalized snapshot in [PAPER_BOT.md](PAPER_BOT.md). |
+| **Upstox** (`UPSTOX_ACCESS_TOKEN`) | **India**: NSE index, F&O stocks, ETFs, plus **option chains (CE/PE) with OI, OI change, IV, Greeks** | **Live** in NSE hours (09:15-15:30 IST) | Needs a free Upstox account; create an **Analytics Token** (read-only, 1 year) in the Upstox developer apps page. It cannot place orders. Add it as a GitHub secret named `UPSTOX_ACCESS_TOKEN`. |
+| **Twelve Data** (`TWELVEDATA_API_KEY`) | **International**: US stocks and ETFs (`GLOBAL_WATCHLIST`) | **End of day** | Free plan is US-only and "internal non-display" per their pricing page. Not live. |
+| **Snapshot adapter** (`MARKET_DATA_SNAPSHOT_URL`) | Anything you license, any region | as the adapter states | Normalized snapshot in [PAPER_BOT.md](PAPER_BOT.md). |
 
-**India:** no licensed NSE feed is connected, so India shows "No data" and the bot does not trade it. NSE market data (especially option chains, OI, IV and Greeks) needs a licensed vendor or a broker data API subscription. When you have one, build the adapter and set `MARKET_DATA_SNAPSHOT_URL`. Nothing else changes.
+**India setup:** (1) add `UPSTOX_ACCESS_TOKEN` as a GitHub secret, (2) run the **Refresh India universe** workflow once (Actions tab) so every F&O stock and ETF is included, (3) push or re-run **Deploy MarketPilot API**. Cloudflare's free Workers plan allows about 50 outbound calls per run, so history and F&O stock chains load gradually (indices every run, stocks rotate); the Markets tab shows coverage. Workers Paid ($5/month) raises this and `UPSTOX_MAX_INSTRUMENTS`, `UPSTOX_HISTORY_BATCH`, `UPSTOX_CHAIN_BATCH` can then be increased.
+
+**International live:** there is no free reliable live source. International stays end-of-day unless you license a live feed and connect it through the adapter.
 
 ## 6. Optional: AI wording
 

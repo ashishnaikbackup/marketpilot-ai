@@ -2,7 +2,9 @@
 // Virtual money only. It never talks to a broker and never invents quotes:
 // if there is no fresh price for an instrument, it does not trade or mark it.
 
-export const STRATEGY_VERSION = "trend-options-v2";
+import { riskMultiplier } from "./learning.js";
+
+export const STRATEGY_VERSION = "trend-options-v3";
 export const STRATEGIES = { cash: "trend-momentum-long", option: "trend-long-premium" };
 
 // Documented, editable assumptions. Statutory charges, taxes, margin and market impact are NOT modelled.
@@ -139,7 +141,7 @@ function strategyStats(rows) {
  * @param {{strategy:string,net_pnl:number}[]} a.closedHistory all previously closed trades (for stats)
  * @param {number} a.nowMs
  */
-export function evaluate({ snapshot, account, open, closedHistory = [], nowMs }) {
+export function evaluate({ snapshot, account, open, closedHistory = [], learning = null, nowMs }) {
   const region = snapshot.region, cfg = COSTS[region];
   const mode = snapshot.data_mode === "eod" ? "eod" : "intraday";
   const optionContracts = mode === "eod" ? [] : snapshot.option_contracts || [];
@@ -212,6 +214,7 @@ export function evaluate({ snapshot, account, open, closedHistory = [], nowMs })
     }
     if (s.side !== "BULLISH") continue;
     if (held.has(i.symbol)) continue;
+    if (learning?.cooldowns?.[i.symbol]) { skipped.push({ symbol: i.symbol, action: "SKIP", reason: learning.cooldowns[i.symbol].reason }); continue; }
     const px = priceFor(i.quote, "BUY", cfg, "CASH", nowMs, mode);
     if (!px) { skipped.push({ symbol: i.symbol, action: "SKIP", reason: "Bullish trend but no fresh quote; no entry without a price." }); watch.push({ symbol: i.symbol, bias: "BULLISH", note: "Bullish trend; needs a fresh quote.", momentum_pct: round(s.momentum * 100, 2) }); continue; }
     candidates.push({ i, s, px, lot });
@@ -220,7 +223,7 @@ export function evaluate({ snapshot, account, open, closedHistory = [], nowMs })
   for (const c of candidates) {
     if (slots < 1) { watch.push({ symbol: c.i.symbol, bias: "BULLISH", note: "Position limit reached.", momentum_pct: round(c.s.momentum * 100, 2) }); continue; }
     const entry = c.px.price, stop = entry * (1 - LIMITS.stop_pct), target = entry * (1 + LIMITS.target_pct);
-    const riskBudget = equity * LIMITS.risk_per_trade;
+    const riskBudget = equity * LIMITS.risk_per_trade * Math.min(riskMultiplier(learning, STRATEGIES.cash), 1.25);
     let qty = Math.floor(Math.min(riskBudget / ((entry - stop) * c.lot), (equity * LIMITS.max_notional) / (entry * c.lot)));
     while (qty >= 1 && !canSpend(entry * qty * c.lot + cfg.brokerage_per_order)) qty--;
     if (qty < 1) { skipped.push({ symbol: c.i.symbol, action: "SKIP", reason: "Below minimum size under the risk, cash or exposure limit." }); watch.push({ symbol: c.i.symbol, bias: "BULLISH", note: "Setup valid; blocked by size/cash/exposure limit.", momentum_pct: round(c.s.momentum * 100, 2) }); continue; }
@@ -234,6 +237,7 @@ export function evaluate({ snapshot, account, open, closedHistory = [], nowMs })
   for (const o of optionContracts) {
     const s = signals.get(o.underlying);
     if (!s || !["BULLISH", "BEARISH"].includes(s.side) || !o.contract_id || !o.symbol) continue;
+    if (learning?.cooldowns?.[o.underlying]) continue;
     const right = region === "INDIA" ? (s.side === "BULLISH" ? "CE" : "PE") : (s.side === "BULLISH" ? "CALL" : "PUT");
     const expiry = Date.parse(region === "INDIA" ? o.expiry + "T15:30:00+05:30" : o.expiry + "T23:59:59Z");
     const dte = (expiry - nowMs) / 86400000;
@@ -297,6 +301,8 @@ export function evaluate({ snapshot, account, open, closedHistory = [], nowMs })
     portfolio: { starting_capital: account.starting_cash, equity: round(equityNow), cash: round(cash), invested: round(gross), realized_pnl_net: round(realizedNet), unrealized_pnl: round(unrealized), total_pnl: round(equityNow - account.starting_cash), total_return_pct: round(((equityNow - account.starting_cash) / account.starting_cash) * 100, 3), realized_this_run: round(exits.reduce((s, e) => s + e.net_pnl, 0)) },
     risk_exposure: { gross_exposure_pct: round((gross / equityNow) * 100, 2), max_gross_exposure_pct: LIMITS.max_gross_exposure * 100, open_positions: totalOpenPositions, max_positions: LIMITS.max_positions, open_options: remaining.filter((p) => p.asset_class === "OPTION").length + entries.filter((e) => e.asset_class === "OPTION").length, max_options: LIMITS.max_options, capital_at_risk_to_stops: round(entries.reduce((s, e) => s + e.risk_amount, 0) + remaining.reduce((s, p) => s + Math.max(0, ((p.mark ?? p.last_price) - p.stop_price) * p.quantity * p.lot_size), 0)), stale_marks: staleMarks },
     strategy_performance: strategyStats(allClosed),
+    data_coverage: snapshot.coverage || null,
+    learning: learning ? { ready: learning.ready, strategies: learning.strategies, paused_symbols: learning.cooldowns, rules: learning.rules } : null,
     next_session_watchlist: watch.sort((a, b) => Math.abs(b.momentum_pct) - Math.abs(a.momentum_pct)).slice(0, 8),
     assumptions: { brokerage_per_order: cfg.brokerage_per_order, equity_slippage_bps_if_no_bid_ask: cfg.equity_slippage_bps, option_slippage_bps_if_no_bid_ask: cfg.option_slippage_bps, limits: LIMITS, not_modelled: ["statutory charges and taxes", "margin and funding", "market impact", "corporate actions"] },
     notes: ["Experimental rule-based paper simulation; not a validated strategy or investment advice.", "No broker orders are sent. Long-only equity/ETF/futures and long-premium option positions only.", "Fills use real bid/ask when supplied; otherwise last trade plus the stated slippage assumption.", "No fresh quote means no new trade and no fabricated mark."],
