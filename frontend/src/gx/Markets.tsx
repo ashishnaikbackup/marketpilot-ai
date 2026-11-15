@@ -16,7 +16,7 @@ export default function Markets({ desk }: { desk: Desk }) {
     </div>
     {(b.sector_moves || []).length > 0 && <div className="gx-card"><div className="gx-h"><h2>Sectors</h2></div>{b.sector_moves!.map((s) => <div className="gx-row" key={s.sector}><div><strong>{s.sector}</strong></div><div className={"r " + tone(s.avg_change_pct)}>{pctText(s.avg_change_pct)}</div></div>)}</div>}
     <div className="gx-card"><div className="gx-h"><h2>Options (F&O)</h2></div>
-      {b.fo_summary?.by_underlying.length ? b.fo_summary.by_underlying.map((u) => <div className="gx-row" key={u.underlying}><div><strong>{u.underlying}</strong><small>Put/call ratio {u.pcr_oi ?? "—"} · average IV {u.mean_iv_pct ?? "—"}%</small></div><div className="r">{u.contracts} contracts</div></div>)
+      {b.fo_summary?.by_underlying.length ? b.fo_summary.by_underlying.map((u) => <div className="gx-row" key={u.underlying}><div><strong>{u.underlying}</strong><small>Put/call ratio {u.pcr_oi ?? "—"} · IV {u.mean_iv_pct ?? "—"}%{u.support_strike ? " · support " + u.support_strike : ""}{u.resistance_strike ? " · resistance " + u.resistance_strike : ""}{u.max_pain_strike ? " · max pain " + u.max_pain_strike : ""}</small></div><div className="r">{u.contracts} contracts</div></div>)
         : <p className="gx-sub">{b.fo_summary?.options_disabled_reason || "Options analysis needs a licensed live option-chain feed (NSE data vendor). None is connected, so nothing is shown rather than guessing."}</p>}</div>
   </>;
 }

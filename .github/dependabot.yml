@@ -1,14 +1,20 @@
+# Only minor/patch updates are proposed automatically. Major upgrades (for example TypeScript 7,
+# Vite 8) can break the build and should be done deliberately, in their own change.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /frontend
     schedule: { interval: weekly }
+    ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }]
   - package-ecosystem: npm
     directory: /cloudflare-worker
     schedule: { interval: weekly }
+    ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }]
   - package-ecosystem: pip
     directory: /backend
     schedule: { interval: weekly }
+    ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
+    ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }]

@@ -54,7 +54,7 @@ export type ReportBody = {
   market_overview?: { indices: (Move & { trend?: string })[]; breadth: { bullish: number; bearish: number; neutral: number; scanned: number }; note?: string };
   sector_moves?: { sector: string; avg_change_pct: number; constituents: number }[];
   top_gainers?: Move[]; top_losers?: Move[];
-  fo_summary?: { contracts_seen: number; contracts_eligible: number; options_disabled_reason?: string | null; by_underlying: { underlying: string; contracts: number; eligible_contracts: number; call_open_interest: number; put_open_interest: number; pcr_oi: number | null; mean_iv_pct: number | null }[]; note?: string };
+  fo_summary?: { contracts_seen: number; contracts_eligible: number; options_disabled_reason?: string | null; by_underlying: { underlying: string; contracts: number; eligible_contracts: number; call_open_interest: number; put_open_interest: number; pcr_oi: number | null; pcr_volume?: number | null; change_in_call_oi?: number | null; change_in_put_oi?: number | null; support_strike?: number | null; resistance_strike?: number | null; max_pain_strike?: number | null; strikes_used?: number; mean_iv_pct: number | null; mean_gamma?: number | null; mean_theta?: number | null; mean_vega?: number | null; bias?: string | null }[]; note?: string };
   decisions?: Decision[]; trades_executed?: Decision[]; trades_closed?: Decision[]; trades_skipped?: { symbol: string; reason: string }[];
   open_positions?: { symbol: string; asset_class: string; entry: number; mark: number; unrealized: number; stale: boolean }[];
   portfolio?: { starting_capital: number; equity: number; cash: number; invested: number; realized_pnl_net: number; unrealized_pnl: number; total_pnl: number; total_return_pct: number; realized_this_run: number };

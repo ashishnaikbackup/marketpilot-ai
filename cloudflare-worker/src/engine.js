@@ -66,24 +66,58 @@ export function dayChange(i) {
   return { last: b, previous: a, change_pct: round((b / a - 1) * 100, 2), bar_time: c.at(-1)?.timestamp || null };
 }
 
+// Descriptive option-chain statistics over exactly the contracts the adapter supplied.
+// Support/resistance and max pain are only meaningful for a full chain, so they are reported
+// with the number of strikes used and left null when there is too little data.
+export function maxPain(rows) {
+  const strikes = [...new Set(rows.map((r) => r.strike))].sort((x, y) => x - y);
+  if (strikes.length < 3) return null;
+  let best = null;
+  for (const k of strikes) {
+    let pay = 0;
+    for (const r of rows) pay += (r.call ? Math.max(0, k - r.strike) : Math.max(0, r.strike - k)) * r.oi;
+    if (best === null || pay < best.pay) best = { strike: k, pay };
+  }
+  return best.strike;
+}
+function topStrike(rows, call) {
+  let best = null;
+  for (const r of rows) if (r.call === call && (best === null || r.oi > best.oi)) best = r;
+  return best && best.oi > 0 ? best.strike : null;
+}
 function summariseOptions(contracts, eligibleIds) {
   const by = new Map();
   for (const o of contracts) {
     if (!o?.underlying) continue;
-    const g = by.get(o.underlying) || { underlying: o.underlying, contracts: 0, call_oi: 0, put_oi: 0, ivs: [], eligible: 0 };
+    const g = by.get(o.underlying) || { underlying: o.underlying, contracts: 0, call_oi: 0, put_oi: 0, call_chg: 0, put_chg: 0, chg_n: 0, call_vol: 0, put_vol: 0, ivs: [], greeks: { gamma: [], theta: [], vega: [] }, eligible: 0, rows: [] };
     g.contracts++;
     const call = o.option_type === "CE" || o.option_type === "CALL";
-    if (Number.isInteger(o.open_interest)) { if (call) g.call_oi += o.open_interest; else g.put_oi += o.open_interest; }
+    const oi = Number.isInteger(o.open_interest) ? o.open_interest : null;
+    if (oi !== null) { if (call) g.call_oi += oi; else g.put_oi += oi; }
+    if (finite(o.strike) && oi !== null) g.rows.push({ strike: o.strike, call, oi });
+    if (finite(o.oi_change)) { if (call) g.call_chg += o.oi_change; else g.put_chg += o.oi_change; g.chg_n++; }
+    if (Number.isInteger(o.volume)) { if (call) g.call_vol += o.volume; else g.put_vol += o.volume; }
     if (finite(o.iv) && o.iv > 0) g.ivs.push(o.iv);
+    for (const k of ["gamma", "theta", "vega"]) if (finite(o[k])) g.greeks[k].push(o[k]);
     if (eligibleIds.has(o.contract_id)) g.eligible++;
     by.set(o.underlying, g);
   }
-  return [...by.values()].map((g) => ({
-    underlying: g.underlying, contracts: g.contracts, eligible_contracts: g.eligible,
-    call_open_interest: g.call_oi, put_open_interest: g.put_oi,
-    pcr_oi: g.call_oi ? round(g.put_oi / g.call_oi, 3) : null,
-    mean_iv_pct: g.ivs.length ? round(avg(g.ivs) * 100, 2) : null,
-  }));
+  return [...by.values()].map((g) => {
+    const strikes = new Set(g.rows.map((r) => r.strike)).size;
+    const full = strikes >= 5;
+    return {
+      underlying: g.underlying, contracts: g.contracts, eligible_contracts: g.eligible,
+      call_open_interest: g.call_oi, put_open_interest: g.put_oi,
+      pcr_oi: g.call_oi ? round(g.put_oi / g.call_oi, 3) : null,
+      pcr_volume: g.call_vol ? round(g.put_vol / g.call_vol, 3) : null,
+      change_in_call_oi: g.chg_n ? g.call_chg : null, change_in_put_oi: g.chg_n ? g.put_chg : null,
+      support_strike: full ? topStrike(g.rows, false) : null, resistance_strike: full ? topStrike(g.rows, true) : null,
+      max_pain_strike: full ? maxPain(g.rows) : null, strikes_used: strikes,
+      mean_iv_pct: g.ivs.length ? round(avg(g.ivs) * 100, 2) : null,
+      mean_gamma: g.greeks.gamma.length ? round(avg(g.greeks.gamma), 5) : null, mean_theta: g.greeks.theta.length ? round(avg(g.greeks.theta), 3) : null, mean_vega: g.greeks.vega.length ? round(avg(g.greeks.vega), 3) : null,
+      bias: g.put_oi && g.call_oi ? (g.put_oi / g.call_oi > 1.2 ? "PUT-HEAVY (often read as supportive)" : g.put_oi / g.call_oi < 0.8 ? "CALL-HEAVY (often read as capped)" : "BALANCED") : null,
+    };
+  });
 }
 
 function strategyStats(rows) {

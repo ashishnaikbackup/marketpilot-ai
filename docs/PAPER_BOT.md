@@ -88,3 +88,7 @@ Create a Telegram bot with BotFather, obtain its bot token, and obtain the desti
 - `TELEGRAM_CHAT_ID`
 
 When configured, the Worker sends India and global end-of-day summaries only (not every five-minute poll). Messages include simulated entries/exits, scan counts, source/data mode and simulated P&L. If these settings are absent, reports remain available in the Auto Paper Trader dashboard/API. Never paste a Telegram bot token into GitHub source, the frontend, or chat.
+
+## Option-chain fields and F&O summary
+
+Each option contract may also carry `oi_change`, `gamma`, `theta` and `vega`. The report's `fo_summary` then includes, per underlying: PCR by open interest and by volume, change in call/put OI, the strike with the largest put OI (support) and call OI (resistance), max pain, average IV and average gamma/theta/vega. Support, resistance and max pain are reported only when at least five strikes were supplied, and are `null` otherwise. All figures describe exactly the contracts the adapter supplied; they are not an exchange-wide chain unless the adapter provides one.

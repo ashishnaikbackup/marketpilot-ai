@@ -133,3 +133,25 @@ test("market overview, movers and sectors are computed from supplied candles onl
   assert.ok(Array.isArray(r.report.top_gainers) && Array.isArray(r.report.top_losers));
   for (const k of ["risk_exposure", "strategy_performance", "next_session_watchlist", "assumptions", "open_positions", "trades_skipped"]) assert.ok(k in r.report, k);
 });
+
+test("option-chain summary reports PCR, OI change, support/resistance, max pain and Greeks from supplied data only", async () => {
+  const { maxPain } = await import("../src/engine.js");
+  const expiry = new Date(NOW + 20 * 86400000).toISOString().slice(0, 10);
+  const mk = (strike, t, oi, chg) => ({ contract_id: t + strike, symbol: t + strike, underlying: "NIFTY", option_type: t, strike, expiry, lot_size: 25, bid: 50, ask: 51, timestamp: iso(NOW - 1000), delta: t === "CE" ? 0.5 : -0.5, iv: 0.16, gamma: 0.002, theta: -4, vega: 9, open_interest: oi, oi_change: chg, volume: 100 });
+  const chain = [mk(24800, "PE", 9000, 500), mk(24900, "PE", 4000, -100), mk(25000, "PE", 3000, 0), mk(25000, "CE", 3500, 200), mk(25100, "CE", 8000, 900), mk(25200, "CE", 2000, 50)];
+  const r = run(snap([{ symbol: "NIFTY", asset_class: "INDEX", candles: flat(), quote: quote(25000, 25001) }], { option_contracts: chain }));
+  const u = r.report.fo_summary.by_underlying[0];
+  assert.equal(u.support_strike, 24800, "largest put OI");
+  assert.equal(u.resistance_strike, 25100, "largest call OI");
+  assert.equal(u.change_in_call_oi, 1150);
+  assert.equal(u.change_in_put_oi, 400);
+  assert.equal(u.pcr_oi, Math.round((16000 / 13500) * 1000) / 1000);
+  assert.equal(u.mean_gamma, 0.002);
+  assert.equal(u.mean_vega, 9);
+  assert.equal(u.strikes_used, 5);
+  assert.ok([24800, 24900, 25000, 25100, 25200].includes(u.max_pain_strike));
+  assert.equal(maxPain([{ strike: 1, call: true, oi: 1 }]), null, "too few strikes means no max pain");
+  // thin chains must not fabricate support/resistance
+  const thin = run(snap([{ symbol: "NIFTY", asset_class: "INDEX", candles: flat(), quote: quote(25000, 25001) }], { option_contracts: chain.slice(0, 2) }));
+  assert.equal(thin.report.fo_summary.by_underlying[0].support_strike, null);
+});

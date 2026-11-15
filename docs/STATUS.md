@@ -27,10 +27,10 @@ Honest status based on what was run and tested, not on code volume.
 - Provider adapters: Twelve Data (EOD), generic snapshot URL; key in header, never in URL; EOD is never labelled live.
 - New simple mobile-first UI (Home, Trader, Markets, Ask AI, More); all 14 earlier tools preserved under More.
 
-Test totals: Worker 56 tests (incl. SQLite integration), backend 34, frontend type-check and build.
+Test totals: Worker 57 tests (incl. SQLite integration), backend 34, frontend type-check and build.
 
 **Partially done**
-- F&O: calculators (Black-Scholes Greeks, IV, payoff), CSV option-chain lab, and an engine that picks CE/PE long-premium contracts with delta, OI, volume, spread and expiry filters. **Missing:** change in OI, support/resistance from OI, gamma/theta/vega on supplied chains, and any live chain.
+- F&O: calculators (Black-Scholes Greeks, IV, payoff), CSV option-chain lab, and an engine that picks CE/PE long-premium contracts with delta, OI, volume, spread and expiry filters. Change in OI, OI-based support/resistance, max pain, PCR and average Greeks are computed on any chain an adapter supplies (tested). **Missing:** a live chain to feed it, and per-strike Greeks display.
 - Global markets: US stocks and ETFs at end of day. SPY/QQQ stand in for indices. No international exchanges.
 - UI: verified in a headless browser against a mock API at phone and desktop widths. **Not yet seen against the real deployed API.**
 
