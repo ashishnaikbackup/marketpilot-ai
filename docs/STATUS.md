@@ -23,6 +23,7 @@ Honest status based on what was run and tested, not on code volume.
 - Portfolio analytics: equity curve, cash, exposure, win rate, profit factor, average win/loss, holding time, max drawdown, per-strategy stats.
 - Daily report (11 sections incl. decisions, skipped trades with reasons, open/closed, risk, strategy stats, watchlist) with full history.
 - Grounded assistant: latest trade, portfolio review, risks, momentum/watchlist, market summary, compare, data status; refuses to guess.
+- GitHub secret scanning and push protection: enabled on the repo.
 - Security: CORS allowlist, constant-time tokens, rate and size limits, read/run token separation, audits, secret scan.
 - Provider adapters: Twelve Data (EOD), generic snapshot URL; key in header, never in URL; EOD is never labelled live.
 - New simple mobile-first UI (Home, Trader, Markets, Ask AI, More); all 14 earlier tools preserved under More.

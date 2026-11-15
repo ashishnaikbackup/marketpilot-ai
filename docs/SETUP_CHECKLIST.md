@@ -57,9 +57,9 @@ The bot invents nothing. Without a data source it stays idle and says so.
 
 The Ask AI tab already answers from your bot's data. To let Workers AI rephrase answers, set `AI_CHAT_ENABLED=true` as a Worker variable. Rate limits (10 to 20 requests/min per IP) are built in. Add a Cloudflare rate-limiting rule for hard guarantees.
 
-## 7. Turn on GitHub protections
+## 7. GitHub protections
 
-Settings → Code security: enable **Secret scanning**, **Push protection** and **Dependabot alerts**. The repo already runs a weekly gitleaks scan and pip/npm audits in CI.
+Secret scanning and push protection are already **enabled** on this repository (verified 2026-11-15). Optional: Settings → Code security → turn on **Dependabot security updates** (currently off). CI already runs gitleaks, pip-audit and npm audit.
 
 ## Schedule
 

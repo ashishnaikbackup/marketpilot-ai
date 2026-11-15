@@ -45,4 +45,4 @@ This is a source-level review of the current frontend, Cloudflare Worker, GitHub
 
 ## Known remaining work
 
-Licensed NSE data and option chains, deployed-Worker verification, Cloudflare rate-limiting rule, enabling GitHub secret scanning/push protection in repository settings, and an external security test. See [STATUS.md](STATUS.md).
+Licensed NSE data and option chains, deployed-Worker verification, Cloudflare rate-limiting rule, an external security test, and optionally enabling Dependabot security updates. GitHub secret scanning and push protection are already enabled. See [STATUS.md](STATUS.md).
