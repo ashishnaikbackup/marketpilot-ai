@@ -23,8 +23,8 @@ export default function GxApp() {
   const regions = provider?.regions;
   // Open on a market the connected data source actually covers (e.g. Twelve Data free plan = Global only).
   useEffect(() => { if (regions?.length && !regions.includes(region)) setRegion(regions[0]); }, [regions, region]);
-  const chip = !settings.api ? { cls: "", text: "Not connected" } : desk.error ? { cls: "bad", text: "Offline" } : provider?.configured ? { cls: provider.data_mode === "live" ? "ok" : "warn", text: modeLabel(provider.data_mode) + " data" } : desk.connected ? { cls: "warn", text: "No data source" } : { cls: "", text: "Connecting…" };
-  const needsSetup = !settings.api || (desk.needsToken && tab !== "more");
+  const chip = desk.demo ? { cls: "warn", text: "Demo data" } : desk.error ? { cls: "bad", text: "Offline" } : provider?.configured ? { cls: provider.data_mode === "live" ? "ok" : "warn", text: modeLabel(provider.data_mode) + " data" } : desk.connected ? { cls: "warn", text: "No data source" } : { cls: "", text: "Connecting…" };
+  const needsSetup = !desk.demo && desk.needsToken && tab !== "more";
 
   return <div className="gx">
     <header className="gx-top"><div className="gx-top-in">
@@ -36,8 +36,9 @@ export default function GxApp() {
     </div></header>
     <main className="gx-wrap">
       {tab !== "more" && tab !== "ask" && !needsSetup && <div className="gx-seg" role="tablist" aria-label="Market">{(["INDIA", "GLOBAL"] as const).map((r) => <button key={r} className={region === r ? "on" : ""} onClick={() => setRegion(r)}>{r === "INDIA" ? "India" : "Global"}</button>)}</div>}
+      {desk.demo && tab !== "more" && <div className="gx-note"><span><b>Demo mode.</b> Every number here is sample data, not real markets or a real bot. <button className="gx-btn ghost" style={{ padding: "4px 10px", fontSize: 13, marginLeft: 6 }} onClick={() => setTab("more")}>Connect real data</button></span></div>}
       {desk.error && settings.api && tab !== "more" && <div className="gx-note err"><span>{desk.error}</span></div>}
-      {needsSetup && tab !== "more" ? <Setup settings={settings} onSave={setSettings} />
+      {needsSetup ? <Setup settings={settings} onSave={setSettings} />
         : tab === "home" ? <Home desk={desk} go={setTab} />
         : tab === "trader" ? <Trader desk={desk} />
         : tab === "markets" ? <Markets desk={desk} />

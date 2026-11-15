@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { demoEquity, demoPortfolio, demoPositions, demoReports, demoStatus } from "./demo";
 
 export const KEY = "marketpilot-paperbot-api-v1"; // same key the earlier screens used, so saved settings carry over
 export type Region = "INDIA" | "GLOBAL";
@@ -67,14 +68,17 @@ export type Report = { id: string; region: Region; trigger: string; source: stri
 export type EquityPoint = { recorded_at: string; equity: number; cash: number };
 
 export type Desk = {
-  settings: Settings; region: Region; loading: boolean; error: string; connected: boolean; needsToken: boolean; updated: string;
+  settings: Settings; region: Region; demo: boolean; loading: boolean; error: string; connected: boolean; needsToken: boolean; updated: string;
   status: Status | null; portfolio: Portfolio | null; positions: Position[]; reports: Report[]; equity: EquityPoint[]; refresh: () => void;
 };
 
 export function useDesk(settings: Settings, region: Region): Desk {
-  const [state, setState] = useState<Omit<Desk, "settings" | "region" | "refresh">>({ loading: false, error: "", connected: false, needsToken: false, updated: "", status: null, portfolio: null, positions: [], reports: [], equity: [] });
+  const [state, setState] = useState<Omit<Desk, "settings" | "region" | "demo" | "refresh">>({ loading: false, error: "", connected: false, needsToken: false, updated: "", status: null, portfolio: null, positions: [], reports: [], equity: [] });
   const refresh = useCallback(() => {
-    if (!settings.api) { setState((s) => ({ ...s, connected: false, error: "", status: null })); return; }
+    if (!settings.api) { // no backend yet: show clearly labelled sample data so the app can be explored
+      setState({ loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status: demoStatus, portfolio: demoPortfolio(region), positions: demoPositions(region), reports: demoReports(region), equity: demoEquity(region) });
+      return;
+    }
     let cancelled = false;
     setState((s) => ({ ...s, loading: true, error: "" }));
     (async () => {
@@ -96,7 +100,7 @@ export function useDesk(settings: Settings, region: Region): Desk {
     return () => { cancelled = true; };
   }, [settings, region]);
   useEffect(() => refresh(), [refresh]);
-  return { settings, region, refresh, ...state };
+  return { settings, region, refresh, demo: !settings.api, ...state };
 }
 
 export const money = (n: number | null | undefined, cur: string, digits = 0) => (typeof n === "number" && Number.isFinite(n) ? new Intl.NumberFormat(cur === "INR" ? "en-IN" : "en-US", { style: "currency", currency: cur, maximumFractionDigits: digits }).format(n) : "—");
@@ -104,4 +108,4 @@ export const signed = (n: number | null | undefined, cur: string, digits = 0) =>
 export const pctText = (n: number | null | undefined, digits = 2) => (typeof n === "number" && Number.isFinite(n) ? (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n).toFixed(digits) + "%" : "—");
 export const tone = (n: number | null | undefined) => (typeof n === "number" ? (n > 0 ? "up" : n < 0 ? "down" : "flat") : "flat");
 export const when = (iso: string | null | undefined) => { if (!iso) return "—"; const d = new Date(iso); return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); };
-export const modeLabel = (m: string | undefined) => (m === "live" ? "Live" : m === "delayed" ? "Delayed" : m === "eod" ? "End of day" : m === "unavailable" || !m ? "No data" : m);
+export const modeLabel = (m: string | undefined) => (m === "demo" ? "Demo" : m === "live" ? "Live" : m === "delayed" ? "Delayed" : m === "eod" ? "End of day" : m === "unavailable" || !m ? "No data" : m);
