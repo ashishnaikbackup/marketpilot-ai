@@ -48,7 +48,7 @@ Test totals: Worker 57 tests (incl. SQLite integration), backend 34, frontend ty
 
 ## Completion estimate (2026-11-16)
 
-- **Built and tested in code (~78%)**: engine, persistence, reports, assistant, security, UI, tooling, plus the Upstox live adapter (quotes, history, option chains with OI/IV/Greeks), universe builder, bot learning and best-time analysis. 76 worker tests run real SQL with a fake Upstox.
+- **Built and tested in code (~78%)**: engine, persistence, reports, assistant, security, UI, tooling, plus the Upstox live adapter (quotes, history, option chains with OI/IV/Greeks), universe builder, bot learning and best-time analysis. 74 worker tests run real SQL with a fake Upstox.
 - **Verified against the real Upstox API: 0%.** The sandbox cannot reach Upstox, so field names (for example IV in percent, quote timestamp) follow its documentation and are covered only by fixtures. First live run may need small fixes.
 - **Not done / honest limits**: needs your Upstox token, Cloudflare credentials and one run of Refresh India universe; free-plan call limits mean gradual loading; international is end-of-day only; no news or fundamentals source; best-time statistics need weeks of stored data and often will say "no reliable edge".
 
