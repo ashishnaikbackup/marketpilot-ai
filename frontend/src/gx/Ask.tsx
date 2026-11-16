@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Send } from "lucide-react";
+import { answerQuestion } from "@assistant";
 import { call, type Desk } from "./api";
 import { demoAnswer } from "./demo";
 
@@ -12,13 +13,19 @@ export default function Ask({ desk }: { desk: Desk }) {
     const question = text.trim(); if (!question || busy) return;
     setMsgs((m) => [...m, { role: "u", text: question }]); setQ(""); setBusy(true);
     if (desk.demo) { setMsgs((m) => [...m, { role: "a", text: demoAnswer(question), note: "DEMO answer · sample data" }]); setBusy(false); return; }
+    if (!desk.settings.api) { // static mode: answer in the browser from the published, timestamped bot data
+      const g = (desk.grounding as { grounding?: unknown } | null)?.grounding;
+      const r = g ? answerQuestion(question, g, desk.status?.provider) : null;
+      setMsgs((m) => [...m, { role: "a", text: r ? r.answer : "The bot has not published data yet, so there is nothing to answer from.", note: r ? "From your bot's published data" + (r.data_as_of ? " · as of " + new Date(r.data_as_of).toLocaleString() : "") + " · simulated money" : undefined }]);
+      setBusy(false); return;
+    }
     try {
       const r = await call<{ answer: string; data_as_of: string | null; data_mode: string; phrased_by_ai: boolean }>(desk.settings, "/api/v1/paper-bot/ask", { method: "POST", body: JSON.stringify({ question, region: desk.region }) });
       setMsgs((m) => [...m, { role: "a", text: r.answer, note: (r.phrased_by_ai ? "AI-worded from your bot's data · " : "From your bot's data · ") + (r.data_as_of ? "as of " + new Date(r.data_as_of).toLocaleString() + " · " : "") + "simulated money" }]);
     } catch (e) { setMsgs((m) => [...m, { role: "a", text: e instanceof Error ? e.message : "Something went wrong." }]); }
     finally { setBusy(false); setTimeout(() => end.current?.scrollIntoView({ behavior: "smooth" }), 50); }
   }
-  if (!desk.demo && !desk.settings.token) return <div className="gx-card gx-empty"><strong>Connect first</strong><p>Add your API address and read token in More → Connection so the assistant can read your bot's data.</p></div>;
+  if (!desk.demo && desk.settings.api && !desk.settings.token) return <div className="gx-card gx-empty"><strong>Connect first</strong><p>Add your API address and read token in More → Connection so the assistant can read your bot's data.</p></div>;
   return <div className="gx-card">
     <div className="gx-h"><h2>Ask your trading desk</h2></div>
     <p className="gx-sub">Answers come only from what the bot actually recorded. It has no live prices, news or fundamentals, and says so instead of guessing.</p>

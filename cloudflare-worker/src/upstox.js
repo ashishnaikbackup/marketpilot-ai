@@ -134,7 +134,7 @@ export function universeList(universe = universeSeed, cap = 250) {
   ].filter((x) => x.symbol && x.key).slice(0, cap);
 }
 
-export async function fetchUpstoxSnapshot(env, region, purpose, fetchImpl = fetch, nowMs = Date.now(), universe = universeSeed) {
+export async function fetchUpstoxSnapshot(env, region, purpose, fetchImpl = fetch, nowMs = Date.now(), universe = env?.UNIVERSE_INDIA || universeSeed) {
   if (region !== "INDIA") throw new Error("Upstox covers Indian markets only.");
   if (!env?.UPSTOX_ACCESS_TOKEN) throw new Error("UPSTOX_ACCESS_TOKEN is not configured.");
   if (!env?.DB) throw new Error("D1 database is not configured.");

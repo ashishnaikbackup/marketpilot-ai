@@ -36,7 +36,8 @@ export default function GxApp() {
     </div></header>
     <main className="gx-wrap">
       {tab !== "more" && tab !== "ask" && !needsSetup && <div className="gx-seg" role="tablist" aria-label="Market">{(["INDIA", "GLOBAL"] as const).map((r) => <button key={r} className={region === r ? "on" : ""} onClick={() => setRegion(r)}>{r === "INDIA" ? "India" : "Global"}</button>)}</div>}
-      {desk.demo && tab !== "more" && <div className="gx-note"><span><b>Demo mode.</b> Every number here is sample data, not real markets or a real bot. <button className="gx-btn ghost" style={{ padding: "4px 10px", fontSize: 13, marginLeft: 6 }} onClick={() => setTab("more")}>Connect real data</button></span></div>}
+      {desk.demo && tab !== "more" && <div className="gx-note"><span><b>Sample data.</b> The bot has not published its first results yet ({desk.demoReason}). Everything below is clearly fake sample data. The scheduled GitHub Action publishes real results automatically; you can also start it now from the repository's Actions tab → "Paper bot" → Run workflow.</span></div>}
+      {!desk.demo && !settings.api && desk.publishedAt && tab !== "more" && <div className="gx-note info"><span>Bot data published {new Date(desk.publishedAt).toLocaleString()}. Delayed or end-of-day data is labelled as such; paper trading only.</span></div>}
       {desk.error && settings.api && tab !== "more" && <div className="gx-note err"><span>{desk.error}</span></div>}
       {needsSetup ? <Setup settings={settings} onSave={setSettings} />
         : tab === "home" ? <Home desk={desk} go={setTab} />

@@ -15,7 +15,7 @@ export const COSTS = {
 export const LIMITS = {
   max_positions: 12, max_options: 4, risk_per_trade: 0.0025, max_notional: 0.08, max_gross_exposure: 0.6,
   stop_pct: 0.03, target_pct: 0.06, option_stop_pct: 0.3, option_target_pct: 0.45, max_hold_days: 10,
-  quote_max_age_ms: 300000, eod_max_age_ms: 40 * 3600000,
+  quote_max_age_ms: 300000, delayed_max_age_ms: 2400000, eod_max_age_ms: 40 * 3600000,
 };
 
 const finite = (x) => typeof x === "number" && Number.isFinite(x);
@@ -47,7 +47,7 @@ export function trend(i) {
 export function priceFor(q, side, cfg, kind, nowMs, mode = "intraday") {
   if (!q || !q.timestamp) return null;
   const age = nowMs - Date.parse(q.timestamp);
-  const maxAge = mode === "eod" ? LIMITS.eod_max_age_ms : LIMITS.quote_max_age_ms;
+  const maxAge = mode === "eod" ? LIMITS.eod_max_age_ms : mode === "delayed" ? LIMITS.delayed_max_age_ms : LIMITS.quote_max_age_ms;
   if (!Number.isFinite(age) || age < -60000 || age > maxAge) return null;
   if (finite(q.bid) && finite(q.ask) && q.bid > 0 && q.ask >= q.bid) {
     return { price: side === "BUY" ? q.ask : q.bid, basis: "bid_ask", slippage_bps: 0 };
@@ -55,7 +55,7 @@ export function priceFor(q, side, cfg, kind, nowMs, mode = "intraday") {
   if (finite(q.last) && q.last > 0) {
     const bps = kind === "OPTION" ? cfg.option_slippage_bps : cfg.equity_slippage_bps;
     const f = bps / 10000;
-    return { price: side === "BUY" ? q.last * (1 + f) : q.last * (1 - f), basis: mode === "eod" ? "eod_close_with_modelled_slippage" : "last_trade_with_modelled_slippage", slippage_bps: bps };
+    return { price: side === "BUY" ? q.last * (1 + f) : q.last * (1 - f), basis: mode === "eod" ? "eod_close_with_modelled_slippage" : mode === "delayed" ? "delayed_last_with_modelled_slippage" : "last_trade_with_modelled_slippage", slippage_bps: bps };
   }
   return null;
 }
@@ -143,7 +143,7 @@ function strategyStats(rows) {
  */
 export function evaluate({ snapshot, account, open, closedHistory = [], learning = null, nowMs }) {
   const region = snapshot.region, cfg = COSTS[region];
-  const mode = snapshot.data_mode === "eod" ? "eod" : "intraday";
+  const mode = snapshot.data_mode === "eod" ? "eod" : snapshot.data_mode === "delayed" ? "delayed" : "intraday";
   const optionContracts = mode === "eod" ? [] : snapshot.option_contracts || [];
   const instruments = new Map(snapshot.instruments.map((x) => [x.symbol, x]));
   const contracts = new Map(optionContracts.map((x) => [x.contract_id, x]));

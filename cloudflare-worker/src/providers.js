@@ -1,4 +1,5 @@
 import { fetchUpstoxSnapshot } from "./upstox.js";
+import { fetchYahooSnapshot } from "./free-feeds.js";
 
 // Market-data provider adapters. Each adapter returns a normalized snapshot (docs/PAPER_BOT.md).
 // Rules: never invent data, never label end-of-day data as live, never put vendor keys in URLs or logs.
@@ -22,6 +23,11 @@ export function regionProvider(env, region) {
   const explicit = String(env?.MARKET_DATA_PROVIDER || "").trim().toLowerCase();
   if (region === "INDIA" && env?.UPSTOX_ACCESS_TOKEN && (!explicit || explicit === "upstox")) return { ...UPSTOX_INFO, data_mode: "live" };
   const name = explicit && explicit !== "upstox" ? explicit : env?.MARKET_DATA_SNAPSHOT_URL ? "adapter_url" : env?.TWELVEDATA_API_KEY ? "twelvedata" : "none";
+  const freeOn = env?.FREE_FEEDS === "on";
+  if (name === "yahoo" || (freeOn && (name === "none" || (name === "twelvedata" && region === "INDIA" && !env?.TWELVEDATA_INDIA_SYMBOLS)))) {
+    return { provider: "yahoo", configured: true, data_mode: "delayed", intraday: true,
+      message: "Free keyless Yahoo Finance feed: prices are DELAYED (about 15 minutes) and unofficial. No option chains. Add an Upstox token for real-time Indian data and F&O chains." };
+  }
   if (name === "twelvedata") {
     const hasKey = Boolean(env?.TWELVEDATA_API_KEY), covers = region === "GLOBAL" || Boolean(env?.TWELVEDATA_INDIA_SYMBOLS);
     return {
@@ -109,6 +115,7 @@ async function fetchAdapterUrl(env, region, purpose, fetchImpl) {
 export async function fetchSnapshot(env, region, purpose, fetchImpl = fetch) {
   const name = regionProvider(env, region).provider;
   if (name === "upstox") return fetchUpstoxSnapshot(env, region, purpose, fetchImpl);
+  if (name === "yahoo") return fetchYahooSnapshot(env, region, purpose, fetchImpl);
   if (name === "twelvedata") return fetchTwelveData(env, region, fetchImpl);
   if (name === "adapter_url") return fetchAdapterUrl(env, region, purpose, fetchImpl);
   throw new Error("No market-data provider configured.");

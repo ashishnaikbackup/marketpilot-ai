@@ -1,0 +1,54 @@
+name: Paper bot
+
+# The whole backend lives here: this job fetches market data, runs the paper-trading bot, stores its state and
+# publishes JSON that the website reads. No servers, no Cloudflare, no tokens typed into the website.
+on:
+  schedule:
+    - cron: "*/10 3-10 * * 1-5"   # India session and end-of-day (UTC)
+    - cron: "*/10 13-23 * * 1-5"  # US session and end-of-day (UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paper-bot
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tests
+        run: cd cloudflare-worker && node --test
+      - name: Restore bot data
+        run: |
+          mkdir bot-data
+          if git fetch --depth=1 origin bot-data:refs/remotes/origin/bot-data 2>/dev/null; then
+            git archive origin/bot-data | tar -x -C bot-data
+            echo "Restored previous state."
+          else
+            echo "No previous state; starting fresh."
+          fi
+      - name: Run one bot tick
+        env:
+          UPSTOX_ACCESS_TOKEN: ${{ secrets.UPSTOX_ACCESS_TOKEN }}
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node runner/run.mjs bot-data
+      - name: Publish data branch (single commit, no history growth)
+        run: |
+          cd bot-data
+          rm -rf .git
+          git init -q -b bot-data
+          git config user.name "marketpilot-bot"
+          git config user.email "marketpilot-bot@users.noreply.github.com"
+          git add -A
+          git commit -qm "Bot data $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" bot-data

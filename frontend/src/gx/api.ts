@@ -26,6 +26,15 @@ export function clearSettings() {
   try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + "-read-token-saved"); sessionStorage.removeItem(KEY + "-read-token"); } catch { /* ignore */ }
 }
 
+// The bot runs in GitHub Actions and publishes plain JSON files to this public branch. No API address or token needed.
+export const DATA_BASE = ((import.meta.env.VITE_DATA_BASE as string | undefined) || "https://raw.githubusercontent.com/ashishnaikbackup/marketpilot-ai/bot-data/public/paper-bot").replace(/\/+$/, "");
+async function getStatic<T>(name: string): Promise<T> {
+  let res: Response;
+  try { res = await fetch(DATA_BASE + "/" + name + ".json", { cache: "no-store" }); } catch { throw new ApiError("Could not reach the published bot data. Check your internet connection.", 0); }
+  if (!res.ok) throw new ApiError(res.status === 404 ? "The bot has not published data yet." : "Could not load bot data (" + res.status + ").", res.status);
+  return res.json() as Promise<T>;
+}
+
 export class ApiError extends Error { status: number; constructor(m: string, s: number) { super(m); this.status = s; } }
 export async function call<T>(s: Settings, path: string, init?: RequestInit): Promise<T> {
   if (!s.api) throw new ApiError("Add your MarketPilot API address first.", 0);
@@ -72,23 +81,37 @@ export type Report = { id: string; region: Region; trigger: string; source: stri
 export type EquityPoint = { recorded_at: string; equity: number; cash: number };
 
 export type Desk = {
-  settings: Settings; region: Region; demo: boolean; loading: boolean; error: string; connected: boolean; needsToken: boolean; updated: string;
+  settings: Settings; region: Region; demo: boolean; demoReason: string; grounding: unknown; publishedAt: string; loading: boolean; error: string; connected: boolean; needsToken: boolean; updated: string;
   status: Status | null; portfolio: Portfolio | null; positions: Position[]; reports: Report[]; equity: EquityPoint[]; insights: Insights | null; refresh: () => void;
 };
 
 export function useDesk(settings: Settings, region: Region): Desk {
-  const [state, setState] = useState<Omit<Desk, "settings" | "region" | "demo" | "refresh">>({ loading: false, error: "", connected: false, needsToken: false, updated: "", status: null, portfolio: null, positions: [], reports: [], equity: [], insights: null });
+  const [state, setState] = useState<Omit<Desk, "settings" | "region" | "demo" | "refresh">>({ demoReason: "", grounding: null, publishedAt: "", loading: false, error: "", connected: false, needsToken: false, updated: "", status: null, portfolio: null, positions: [], reports: [], equity: [], insights: null });
   const refresh = useCallback(() => {
-    if (!settings.api) { // no backend yet: show clearly labelled sample data so the app can be explored
-      setState({ loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status: demoStatus, portfolio: demoPortfolio(region), positions: demoPositions(region), reports: demoReports(region), equity: demoEquity(region), insights: demoInsights(region) });
-      return;
+    if (!settings.api) { // default: read the files the GitHub Action publishes
+      let off = false;
+      setState((st) => ({ ...st, loading: true, error: "" }));
+      (async () => {
+        try {
+          const [status, portfolio, positions, reports, equity, insights, grounding, meta] = await Promise.all([
+            getStatic<Status>("status"), getStatic<Portfolio>("portfolio-" + region), getStatic<{ positions: Position[] }>("positions-" + region),
+            getStatic<{ reports: Report[] }>("reports-" + region), getStatic<{ points: EquityPoint[] }>("equity-" + region),
+            getStatic<Insights>("insights-" + region).catch(() => null), getStatic<unknown>("grounding-" + region).catch(() => null),
+            getStatic<{ generated_at: string }>("meta").catch(() => null),
+          ]);
+          if (!off) setState({ demoReason: "", grounding, publishedAt: meta?.generated_at || "", loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status, portfolio, positions: positions.positions, reports: reports.reports, equity: equity.points, insights });
+        } catch (e) {
+          if (!off) setState({ demoReason: e instanceof Error ? e.message : "No data.", grounding: null, publishedAt: "", loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status: demoStatus, portfolio: demoPortfolio(region), positions: demoPositions(region), reports: demoReports(region), equity: demoEquity(region), insights: demoInsights(region) });
+        }
+      })();
+      return () => { off = true; };
     }
     let cancelled = false;
     setState((s) => ({ ...s, loading: true, error: "" }));
     (async () => {
       try {
         const status = await call<Status>(settings, "/api/v1/paper-bot/status");
-        if (!settings.token) { if (!cancelled) setState({ loading: false, error: "", connected: true, needsToken: true, updated: new Date().toISOString(), status, portfolio: null, positions: [], reports: [], equity: [], insights: null }); return; }
+        if (!settings.token) { if (!cancelled) setState({ demoReason: "", grounding: null, publishedAt: "", loading: false, error: "", connected: true, needsToken: true, updated: new Date().toISOString(), status, portfolio: null, positions: [], reports: [], equity: [], insights: null }); return; }
         const q = "?region=" + region;
         const [portfolio, positions, reports, equity, insights] = await Promise.all([
           call<Portfolio>(settings, "/api/v1/paper-bot/portfolio" + q),
@@ -97,7 +120,7 @@ export function useDesk(settings: Settings, region: Region): Desk {
           call<{ points: EquityPoint[] }>(settings, "/api/v1/paper-bot/equity" + q + "&limit=300"),
           call<Insights>(settings, "/api/v1/paper-bot/insights" + q).catch(() => null),
         ]);
-        if (!cancelled) setState({ loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status, portfolio, positions: positions.positions, reports: reports.reports, equity: equity.points, insights });
+        if (!cancelled) setState({ demoReason: "", grounding: null, publishedAt: "", loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status, portfolio, positions: positions.positions, reports: reports.reports, equity: equity.points, insights });
       } catch (e) {
         if (!cancelled) setState((s) => ({ ...s, loading: false, connected: false, needsToken: e instanceof ApiError && e.status === 401, error: e instanceof Error ? e.message : "Something went wrong." }));
       }
@@ -105,7 +128,7 @@ export function useDesk(settings: Settings, region: Region): Desk {
     return () => { cancelled = true; };
   }, [settings, region]);
   useEffect(() => refresh(), [refresh]);
-  return { settings, region, refresh, demo: !settings.api, ...state };
+  return { settings, region, refresh, demo: !settings.api && Boolean(state.demoReason), ...state };
 }
 
 export const money = (n: number | null | undefined, cur: string, digits = 0) => (typeof n === "number" && Number.isFinite(n) ? new Intl.NumberFormat(cur === "INR" ? "en-IN" : "en-US", { style: "currency", currency: cur, maximumFractionDigits: digits }).format(n) : "—");

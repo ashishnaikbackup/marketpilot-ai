@@ -162,9 +162,9 @@ export function regionsFor(event,env){
  const indiaEod=hour===10&&minute===20&&indiaDay,globalEod=hour===22&&minute===30&&weekday;
  const out=[];
  const iMode=regionProvider(env,"INDIA").data_mode,gMode=regionProvider(env,"GLOBAL").data_mode;
- const iLive=iMode==="live"||iMode==="live_or_delayed_per_adapter",gLive=gMode==="live"||gMode==="live_or_delayed_per_adapter";
+ const isLive=m=>["live","delayed","live_or_delayed_per_adapter"].includes(m),iLive=isLive(iMode),gLive=isLive(gMode),usHours=weekday&&((hour===13&&minute>=30)||(hour>=14&&hour<=21));
  if(iLive?((indiaDay&&istMin>=555&&istMin<=930)||indiaEod):indiaEod)out.push({region:"INDIA",eod:indiaEod});
- if(gLive?(minute%15===0||globalEod):globalEod)out.push({region:"GLOBAL",eod:globalEod});
+ if(gLive?((minute%15===0&&usHours)||globalEod):globalEod)out.push({region:"GLOBAL",eod:globalEod});
  return out;
 }
 export async function scheduledPaperBot(event,env){

@@ -48,9 +48,10 @@ Test totals: Worker 57 tests (incl. SQLite integration), backend 34, frontend ty
 
 ## Completion estimate (2026-11-16)
 
-- **Built and tested in code (~78%)**: engine, persistence, reports, assistant, security, UI, tooling, plus the Upstox live adapter (quotes, history, option chains with OI/IV/Greeks), universe builder, bot learning and best-time analysis. 74 worker tests run real SQL with a fake Upstox.
-- **Verified against the real Upstox API: 0%.** The sandbox cannot reach Upstox, so field names (for example IV in percent, quote timestamp) follow its documentation and are covered only by fixtures. First live run may need small fixes.
-- **Not done / honest limits**: needs your Upstox token, Cloudflare credentials and one run of Refresh India universe; free-plan call limits mean gradual loading; international is end-of-day only; no news or fundamentals source; best-time statistics need weeks of stored data and often will say "no reliable edge".
+- **Architecture:** GitHub only. The `Paper bot` workflow runs the bot, keeps state on the `bot-data` branch and publishes JSON that the website reads directly. No Cloudflare, no API address, no tokens in the browser.
+- **Built and tested (~85%)**: engine, learning, best-time analysis, persistence, reports, assistant (runs in the browser), security, UI, Yahoo delayed feed, Upstox live adapter with F&O chains, universe builder, runner. 80 worker tests.
+- **Verified against real data feeds: 0%.** The build sandbox cannot reach Yahoo or Upstox, so both are tested with fixtures only. The first workflow run is the real test; expect to fix small things (for example Yahoo rate-limiting GitHub runner IPs).
+- **Honest limits:** free data is delayed, not live; F&O chains and real-time India need an Upstox token; international is delayed at best; no news or fundamentals; learning and timing need weeks of history.
 
 ## Strategy caveat
 

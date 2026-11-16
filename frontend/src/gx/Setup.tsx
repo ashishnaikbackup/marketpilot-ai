@@ -5,8 +5,8 @@ import { clearSettings, saveSettings, type Settings } from "./api";
 export function Setup({ settings, onSave }: { settings: Settings; onSave: (s: Settings) => void }) {
   const [api, setApi] = useState(settings.api), [token, setToken] = useState(settings.token), [remember, setRemember] = useState(false);
   return <div className="gx-card">
-    <div className="gx-h"><h2>Connect your paper trader</h2></div>
-    <p className="gx-sub">MarketPilot runs on your own free Cloudflare account. Two things connect this screen to it:</p>
+    <div className="gx-h"><h2>Advanced: use your own API (optional)</h2></div>
+    <p className="gx-sub">You do not need this. The website already reads the data your GitHub Action publishes. Only fill this in if you run your own optional API.</p>
     <ol className="gx-steps">
       <li><span><b>API address</b>: the <code>workers.dev</code> link printed by the "Deploy MarketPilot API" GitHub Action.</span></li>
       <li><span><b>Read token</b>: the <code>BOT_READ_TOKEN</code> you chose. It can only <i>read</i>; it cannot place trades or change anything.</span></li>
