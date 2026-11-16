@@ -23,7 +23,7 @@ const log = (...a) => console.log("[bot]", ...a);
 async function loadUniverse(dir, nowMs, fetchImpl) {
   const file = join(dir, "universe-india.json");
   const fresh = existsSync(file) && nowMs - statSync(file).mtimeMs < 3 * 86400000;
-  if (fresh) return JSON.parse(readFileSync(file, "utf8"));
+  if (fresh) { const u = JSON.parse(readFileSync(file, "utf8")); if (Array.isArray(u.others)) return u; }
   try {
     const res = await fetchImpl(NSE_MASTER, { signal: AbortSignal.timeout(60000) });
     if (!res.ok) throw new Error("HTTP " + res.status);
