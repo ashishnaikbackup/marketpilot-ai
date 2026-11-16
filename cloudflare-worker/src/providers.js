@@ -26,7 +26,7 @@ export function regionProvider(env, region) {
   const freeOn = env?.FREE_FEEDS === "on";
   if (name === "yahoo" || (freeOn && (name === "none" || (name === "twelvedata" && region === "INDIA" && !env?.TWELVEDATA_INDIA_SYMBOLS)))) {
     return { provider: "yahoo", configured: true, data_mode: "delayed", intraday: true,
-      message: "Free keyless Yahoo Finance feed: prices are DELAYED (about 15 minutes) and unofficial. No option chains. Add an Upstox token for real-time Indian data and F&O chains." };
+      message: "Free keyless Yahoo Finance feed (unofficial, no option chains). Each run measures how old the prices are and labels them live only if they are under 2 minutes old, otherwise DELAYED." };
   }
   if (name === "twelvedata") {
     const hasKey = Boolean(env?.TWELVEDATA_API_KEY), covers = region === "GLOBAL" || Boolean(env?.TWELVEDATA_INDIA_SYMBOLS);

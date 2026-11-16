@@ -39,7 +39,7 @@ test("symbol mapping: NSE suffixes, index tickers, global watchlist", () => {
 test("free feed is opt-in and honestly labelled delayed", () => {
   assert.equal(regionProvider({}, "INDIA").configured, false);
   const r = regionProvider({ FREE_FEEDS: "on" }, "INDIA");
-  assert.equal(r.provider, "yahoo"); assert.equal(r.data_mode, "delayed"); assert.match(r.message, /DELAYED/);
+  assert.equal(r.provider, "yahoo"); assert.equal(r.data_mode, "delayed"); assert.match(r.message, /DELAYED/); assert.match(r.message, /measures/);
   assert.equal(regionProvider({ FREE_FEEDS: "on", UPSTOX_ACCESS_TOKEN: "t" }, "INDIA").provider, "upstox");
   assert.equal(regionProvider({ FREE_FEEDS: "on", UPSTOX_ACCESS_TOKEN: "t" }, "GLOBAL").provider, "yahoo");
   assert.equal(providerInfo({ FREE_FEEDS: "on" }).data_mode, "delayed");
@@ -66,6 +66,15 @@ test("Yahoo snapshot: builds, stores history, skips failures, and the bot accept
   assert.equal(rep.status, "completed"); assert.equal(rep.data_mode, "delayed");
   assert.ok(rep.trades_executed.length >= 1, "delayed quotes (10 min old) are within the 40-minute delayed window");
   assert.equal(rep.trades_executed[0].price_basis, "delayed_last_with_modelled_slippage");
+});
+
+test("label follows measured quote age: old quotes are delayed, fresh in-session quotes are live, never in a closed market", async () => {
+  const inSession = Date.parse("2026-11-16T05:00:00Z");
+  const fresh = async (ageSec, nowMs) => { const f = async () => Response.json({ chart: { error: null, result: [{ ...chart().chart.result[0], meta: { ...chart().chart.result[0].meta, regularMarketTime: Math.floor(nowMs / 1000) - ageSec } }] } }); return fetchYahooSnapshot({ FREE_FEEDS: "on", UNIVERSE_INDIA: { indices: [{ symbol: "NIFTY", key: "k" }], stocks: [], etfs: [] } }, "INDIA", "paper_intraday", f, nowMs); };
+  assert.equal((await fresh(30, inSession)).data_mode, "live");
+  assert.equal((await fresh(900, inSession)).data_mode, "delayed");
+  assert.equal((await fresh(30, Date.parse("2026-11-16T12:00:00Z"))).data_mode, "delayed", "market closed: never live");
+  assert.equal((await fresh(5, inSession)).coverage.measured_quote_age_sec, 5);
 });
 
 test("runner tick publishes every static file the website reads, with no network and no secrets", async () => {

@@ -106,9 +106,13 @@ export async function fetchYahooSnapshot(env, region, purpose, fetchImpl = fetch
     });
   }
   const asOf = instruments.map((i) => i.quote.timestamp).sort().at(-1);
-  return { schema_version: 1, region, source: "yahoo-finance (unofficial, delayed)", data_mode: eod ? "eod" : "delayed", observed_at: at, as_of: asOf, instruments, option_contracts: [], skipped: skipped.slice(0, 50),
-    coverage: { universe_size: list.length, quoted: instruments.length, ready: instruments.length, failed: skipped.length, timing_symbols_refreshed: timing,
-      note: "Free Yahoo feed: prices are delayed (~15 min), there are no option chains, and the feed is unofficial. Add UPSTOX_ACCESS_TOKEN for real-time Indian quotes and F&O option chains." } };
+  // Label by MEASUREMENT, never by assumption: the median age of last-trade times decides "live" vs "delayed".
+  const ages = instruments.map((i) => (nowMs - Date.parse(i.quote.timestamp)) / 1000).filter((x) => Number.isFinite(x)).sort((x, y) => x - y);
+  const medianAge = ages.length ? Math.round(ages[Math.floor(ages.length / 2)]) : null;
+  const measuredLive = !eod && medianAge !== null && medianAge >= -5 && medianAge <= 120 && region === "INDIA" ? marketPhase(nowMs) === "open" : !eod && medianAge !== null && medianAge >= -5 && medianAge <= 120;
+  return { schema_version: 1, region, source: "yahoo-finance (unofficial, delayed)", data_mode: eod ? "eod" : measuredLive ? "live" : "delayed", observed_at: at, as_of: asOf, instruments, option_contracts: [], skipped: skipped.slice(0, 50),
+    coverage: { measured_quote_age_sec: medianAge, universe_size: list.length, quoted: instruments.length, ready: instruments.length, failed: skipped.length, timing_symbols_refreshed: timing,
+      note: `Free Yahoo feed (unofficial, no option chains). Measured median age of last trades: ${medianAge === null ? "unknown" : medianAge + " s"}; labelled live only when that is 2 minutes or less in session, otherwise delayed.` } };
 }
 
 export { marketPhase };
