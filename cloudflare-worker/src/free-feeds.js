@@ -52,7 +52,7 @@ async function getChart(fetchImpl, y, params) {
   const u = new URL(YAHOO + encodeURIComponent(y));
   for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
   for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await fetchImpl(u.toString(), { headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketPilotPaperBot/1.0)", Accept: "application/json" } });
+    const res = await fetchImpl(u.toString(), { headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketPilotPaperBot/1.0)", Accept: "application/json" }, signal: AbortSignal.timeout(15000) });
     if (res.ok) return res.json();
     if (res.status !== 429 && res.status < 500) throw new Error("Yahoo HTTP " + res.status);
     await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));

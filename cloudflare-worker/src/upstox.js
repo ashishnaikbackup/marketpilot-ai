@@ -148,7 +148,7 @@ export async function fetchUpstoxSnapshot(env, region, purpose, fetchImpl = fetc
   const call = async (path, params) => {
     const u = new URL(UPSTOX_BASE + path);
     for (const [k, v] of Object.entries(params || {})) u.searchParams.set(k, v);
-    const res = await fetchImpl(u.toString(), { headers: { Authorization: "Bearer " + env.UPSTOX_ACCESS_TOKEN, Accept: "application/json" } });
+    const res = await fetchImpl(u.toString(), { headers: { Authorization: "Bearer " + env.UPSTOX_ACCESS_TOKEN, Accept: "application/json" }, signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error("Upstox HTTP " + res.status);
     return res.json();
   };

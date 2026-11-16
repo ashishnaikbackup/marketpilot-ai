@@ -69,7 +69,7 @@ export async function fetchFoBhavcopy(fetchImpl = fetch, nowMs = Date.now()) {
     if (wd === 0 || wd === 6) continue;
     const ymd = d.toISOString().slice(0, 10).replaceAll("-", "");
     try {
-      const res = await fetchImpl(bhavUrl(ymd), { headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketPilotPaperBot/1.0)", Accept: "*/*" } });
+      const res = await fetchImpl(bhavUrl(ymd), { headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketPilotPaperBot/1.0)", Accept: "*/*" }, signal: AbortSignal.timeout(20000) });
       if (!res.ok) continue;
       const sum = summariseBhavcopy(unzipFirst(Buffer.from(await res.arrayBuffer())).toString("utf8"));
       if (sum.underlyings.length) return { source: "NSE F&O bhavcopy (official end-of-day file)", data_mode: "eod", file_date: ymd, ...sum };

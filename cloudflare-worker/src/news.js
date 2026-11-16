@@ -21,7 +21,7 @@ export function parseRss(xml, limit = 12) {
 export async function fetchNews(fetchImpl = fetch) {
   const out = { source: "Google News RSS (headlines only, not analysed)", fetched_at: new Date().toISOString() };
   for (const [region, url] of Object.entries(FEEDS)) {
-    try { const r = await fetchImpl(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketPilotPaperBot/1.0)" } }); out[region] = r.ok ? parseRss(await r.text()) : []; } catch { out[region] = []; }
+    try { const r = await fetchImpl(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketPilotPaperBot/1.0)" }, signal: AbortSignal.timeout(15000) }); out[region] = r.ok ? parseRss(await r.text()) : []; } catch { out[region] = []; }
   }
   return out;
 }

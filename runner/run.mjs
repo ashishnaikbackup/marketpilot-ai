@@ -24,7 +24,7 @@ async function loadUniverse(dir, nowMs, fetchImpl) {
   const fresh = existsSync(file) && nowMs - statSync(file).mtimeMs < 3 * 86400000;
   if (fresh) return JSON.parse(readFileSync(file, "utf8"));
   try {
-    const res = await fetchImpl(NSE_MASTER);
+    const res = await fetchImpl(NSE_MASTER, { signal: AbortSignal.timeout(60000) });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const u = buildUniverse(JSON.parse(gunzipSync(Buffer.from(await res.arrayBuffer())).toString("utf8")), nowMs);
     writeFileSync(file, JSON.stringify(u));
@@ -115,7 +115,7 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   for (const k of ["UPSTOX_ACCESS_TOKEN", "TWELVEDATA_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "GLOBAL_WATCHLIST"]) if (process.env[k]) env[k] = process.env[k];
   const endAt = Date.now() + loopMin * 60000;
   for (;;) {
-    try { const out = await runOnce({ dataDir: dir, env }); log("published", out.files, "files.", out.status); publish(dir); }
+    try { const out = await Promise.race([runOnce({ dataDir: dir, env }), new Promise((_, rej) => setTimeout(() => rej(new Error("tick exceeded 8 minutes")), 8 * 60000).unref())]); log("published", out.files, "files.", out.status); publish(dir); }
     catch (e) { log("tick failed:", e instanceof Error ? e.message : e); if (!loopMin) process.exitCode = 1; }
     process.env.FORCE_EOD = "0";
     const wait = tickInterval(Date.now());
