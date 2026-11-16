@@ -52,7 +52,8 @@ Test totals: Worker 57 tests (incl. SQLite integration), backend 34, frontend ty
 - **Built and tested (~85%)**: engine, learning, best-time analysis, persistence, reports, assistant (runs in the browser), security, UI, Yahoo delayed feed, Upstox live adapter with F&O chains, universe builder, runner. 80 worker tests.
 - **Verified against real data feeds: 0%.** The build sandbox cannot reach Yahoo or Upstox, so both are tested with fixtures only. The first workflow run is the real test; expect to fix small things (for example Yahoo rate-limiting GitHub runner IPs).
 - **Also added:** news headlines (working), an NSE end-of-day F&O open-interest reader (code tested, but NSE times out requests from GitHub servers, so it publishes nothing for now), and a self-chaining bot workflow (cron proved unreliable).
-- **Honest limits:** free data is delayed, not live; F&O chains and real-time India need an Upstox token; international is delayed at best; no news or fundamentals; learning and timing need weeks of history.
+- **All-stocks boards:** every NSE equity (Upstox instrument master) and every US-listed stock/ETF (Nasdaq Trader directory) appear in a searchable list, refreshed in rolling slices with a per-row price time. The bot itself scans only F&O stocks, ETFs and indices (India) and 30 large US names.
+- **Honest limits:** option contracts (calls/puts) are not available for US stocks or for Indian stocks without a licensed feed; the app is paper-only reference and never places orders. free data is delayed, not live; F&O chains and real-time India need an Upstox token; international is delayed at best; no news or fundamentals; learning and timing need weeks of history.
 
 ## Strategy caveat
 

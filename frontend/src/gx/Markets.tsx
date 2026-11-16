@@ -1,8 +1,9 @@
+import Board from "./Board";
 import Insights from "./Insights";
 import { modeLabel, pctText, tone, when, type Desk } from "./api";
 
 export default function Markets({ desk }: { desk: Desk }) {
-  return <><MarketsBody desk={desk} /><Insights desk={desk} /></>;
+  return <><MarketsBody desk={desk} /><Board desk={desk} /><Insights desk={desk} /></>;
 }
 function MarketsBody({ desk }: { desk: Desk }) {
   const latest = desk.reports.find((r) => r.status === "completed"), b = latest?.report;

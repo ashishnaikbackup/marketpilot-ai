@@ -13,6 +13,7 @@ import { gunzipSync } from "node:zlib";
 import { execSync } from "node:child_process";
 import { fetchFoBhavcopy } from "../cloudflare-worker/src/nse-fo.js";
 import { fetchNews } from "../cloudflare-worker/src/news.js";
+import { parseNasdaqListings, refreshBoard, boardRows } from "../cloudflare-worker/src/board.js";
 
 const MIGRATIONS = fileURLToPath(new URL("../cloudflare-worker/migrations/", import.meta.url));
 const NSE_MASTER = "https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz";
@@ -61,6 +62,35 @@ export async function runOnce({ dataDir, env: extra = {}, nowMs = Date.now(), fe
   } finally { close(); }
 }
 
+async function updateBoards({ env, dir, nowMs, fetchImpl, write, sources }) {
+  const d = new Date(nowMs), m = d.getUTCHours() * 60 + d.getUTCMinutes(), wd = d.getUTCDay() >= 1 && d.getUTCDay() <= 5;
+  const budget = Number(process.env.BOARD_BUDGET) || 250;
+  const plans = [];
+  const u = env.UNIVERSE_INDIA;
+  if (u) {
+    const syms = [...(u.stocks || []).map((x) => ({ ...x, kind: "F" })), ...(u.etfs || []).map((x) => ({ ...x, kind: "E" })), ...(u.others || []).map((x) => ({ ...x, kind: "S" }))];
+    plans.push({ region: "INDIA", symbols: syms, suffix: ".NS", live: wd && m >= 3 * 60 && m <= 10 * 60 + 40 });
+  }
+  let us = null; const usFile = join(dir, "..", "..", "us-listings.json");
+  if (existsSync(usFile) && nowMs - statSync(usFile).mtimeMs < 7 * 86400000) us = JSON.parse(readFileSync(usFile, "utf8"));
+  else try {
+    const get = async (n) => { const r = await fetchImpl("https://www.nasdaqtrader.com/dynamic/SymDir/" + n, { signal: AbortSignal.timeout(30000) }); if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); };
+    us = parseNasdaqListings(await get("nasdaqlisted.txt"), await get("otherlisted.txt"));
+    if (us.length > 500) writeFileSync(usFile, JSON.stringify(us)); else us = null;
+  } catch (e) { sources.us_listings = { ok: false, error: String(e instanceof Error ? e.message : e).slice(0, 200) }; }
+  if (us) plans.push({ region: "GLOBAL", symbols: us.map((x) => ({ ...x, kind: x.etf ? "E" : "S" })), suffix: "", live: wd && m >= 13 * 60 && m <= 22 * 60 });
+  for (const p of plans) {
+    const file = join(dir, "..", "..", "board-" + p.region + ".json");
+    let state = {}; try { state = JSON.parse(readFileSync(file, "utf8")); } catch { /* first run */ }
+    let r = { attempted: 0 };
+    const empty = Object.keys(state).length === 0;
+    if (p.live || empty) r = await refreshBoard({ state, symbols: p.symbols, budget: empty ? budget : budget, suffix: p.suffix, fetchImpl, nowMs });
+    writeFileSync(file, JSON.stringify(state));
+    const rows = boardRows(state, p.symbols);
+    write("board-" + p.region, { generated_at: new Date(nowMs).toISOString(), source: "Yahoo Finance chart feed (unofficial)" + (p.region === "INDIA" ? "; NSE symbols from the Upstox public instrument master" : "; symbols from the Nasdaq Trader directory"), total_symbols: p.symbols.length, priced: rows.length, last_slice: r, rows });
+  }
+}
+
 export async function exportStatic({ env, dir, nowMs = Date.now(), fetchImpl = fetch }) {
   mkdirSync(dir, { recursive: true });
   const get = async (path) => {
@@ -88,6 +118,8 @@ export async function exportStatic({ env, dir, nowMs = Date.now(), fetchImpl = f
   const sources = {};
   if (stale("fo-eod", 360)) { try { write("fo-eod", await fetchFoBhavcopy(fetchImpl, nowMs)); sources.fo_eod = { ok: true, at: new Date(nowMs).toISOString() }; } catch (e) { const m = e instanceof Error ? e.message : String(e); log("F&O bhavcopy:", m); sources.fo_eod = { ok: false, error: m.slice(0, 400), at: new Date(nowMs).toISOString() }; } }
   if (stale("news", 25)) { try { const n = await fetchNews(fetchImpl); if (n.INDIA.length || n.GLOBAL.length) write("news", n); } catch { /* optional */ } }
+  // All-stocks boards (rolling refresh, in each market's own hours).
+  try { await updateBoards({ env, dir, nowMs, fetchImpl, write, sources }); } catch (e) { log("boards:", e instanceof Error ? e.message : e); }
   if (Object.keys(sources).length) write("sources", sources);
   write("meta", { generated_at: new Date(nowMs).toISOString(), hosting: "github-actions", mode: "paper_only" });
   return { files: readdirSync(dir).length, status: status.message };
