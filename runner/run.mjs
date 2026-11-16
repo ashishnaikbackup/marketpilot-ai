@@ -85,8 +85,10 @@ export async function exportStatic({ env, dir, nowMs = Date.now(), fetchImpl = f
   }
   // Extra free sources, refreshed on their own cadence; failures never stop the bot.
   const stale = (name, mins) => { try { return nowMs - statSync(join(dir, name + ".json")).mtimeMs > mins * 60000; } catch { return true; } };
-  if (stale("fo-eod", 360)) { try { write("fo-eod", await fetchFoBhavcopy(fetchImpl, nowMs)); } catch (e) { log("F&O bhavcopy:", e instanceof Error ? e.message : e); } }
+  const sources = {};
+  if (stale("fo-eod", 360)) { try { write("fo-eod", await fetchFoBhavcopy(fetchImpl, nowMs)); sources.fo_eod = { ok: true, at: new Date(nowMs).toISOString() }; } catch (e) { const m = e instanceof Error ? e.message : String(e); log("F&O bhavcopy:", m); sources.fo_eod = { ok: false, error: m.slice(0, 400), at: new Date(nowMs).toISOString() }; } }
   if (stale("news", 25)) { try { const n = await fetchNews(fetchImpl); if (n.INDIA.length || n.GLOBAL.length) write("news", n); } catch { /* optional */ } }
+  if (Object.keys(sources).length) write("sources", sources);
   write("meta", { generated_at: new Date(nowMs).toISOString(), hosting: "github-actions", mode: "paper_only" });
   return { files: readdirSync(dir).length, status: status.message };
 }

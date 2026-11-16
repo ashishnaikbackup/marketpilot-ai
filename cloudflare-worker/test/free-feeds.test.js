@@ -73,7 +73,7 @@ test("runner tick publishes every static file the website reads, with no network
   const realFetch = globalThis.fetch; globalThis.fetch = async () => { throw new Error("offline"); };
   try {
     const out = await runOnce({ dataDir: dir, nowMs: Date.parse("2026-11-14T12:00:00Z"), fetchImpl: async () => { throw new Error("offline"); } });
-    assert.equal(out.files, 14);
+    assert.equal(out.files, 15, "14 data files plus sources.json diagnostics");
     for (const f of ["status", "meta", "portfolio-INDIA", "positions-GLOBAL", "equity-INDIA", "reports-GLOBAL", "insights-INDIA", "grounding-INDIA"]) assert.ok(existsSync(join(dir, "public/paper-bot", f + ".json")), f);
     const all = ["status", "portfolio-INDIA", "grounding-INDIA"].map((f) => readFileSync(join(dir, "public/paper-bot", f + ".json"), "utf8")).join("");
     assert.ok(!all.includes("static-export"), "internal read token must not be published");

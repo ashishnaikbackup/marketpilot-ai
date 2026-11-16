@@ -64,16 +64,17 @@ export function summariseBhavcopy(csv) {
 
 /** Try today and the previous few days until NSE has a file. */
 export async function fetchFoBhavcopy(fetchImpl = fetch, nowMs = Date.now()) {
+  const tried = [];
   for (let back = 0; back < 6; back++) {
     const d = new Date(nowMs + 330 * 60000 - back * 86400000), wd = d.getUTCDay();
     if (wd === 0 || wd === 6) continue;
     const ymd = d.toISOString().slice(0, 10).replaceAll("-", "");
     try {
       const res = await fetchImpl(bhavUrl(ymd), { headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketPilotPaperBot/1.0)", Accept: "*/*" }, signal: AbortSignal.timeout(20000) });
-      if (!res.ok) continue;
+      if (!res.ok) { tried.push(ymd + ":HTTP" + res.status); continue; }
       const sum = summariseBhavcopy(unzipFirst(Buffer.from(await res.arrayBuffer())).toString("utf8"));
       if (sum.underlyings.length) return { source: "NSE F&O bhavcopy (official end-of-day file)", data_mode: "eod", file_date: ymd, ...sum };
-    } catch { /* try the previous day */ }
+    } catch (e) { tried.push(ymd + ":" + (e instanceof Error ? e.message : "error").slice(0, 60)); }
   }
-  throw new Error("NSE bhavcopy not available for the last few trading days.");
+  throw new Error("NSE bhavcopy not available for the last few trading days. Tried " + tried.join(", "));
 }
