@@ -55,6 +55,10 @@ export type RegionProvider = { provider: string | null; configured: boolean; dat
 export type Provider = { provider: string | null; configured: boolean; data_mode: string; message: string; regions?: Region[]; by_region?: Record<Region, RegionProvider> };
 export type TimingSlot = { slot: string; samples: number; avg_return_pct: number | null; up_share_pct: number | null; t_stat: number | null };
 export type Timing = { symbol: string; reliable: boolean; best_buy_slot: TimingSlot | null; best_sell_slot: TimingSlot | null; slots: TimingSlot[]; weekdays: { weekday: string; samples: number; avg_return_pct: number | null; up_share_pct: number | null }[]; sample_bars: number; note: string };
+export type FoUnderlying = { underlying: string; is_index: boolean; expiry: string; lot_size: number | null; underlying_price: number | null; call_open_interest: number; put_open_interest: number; pcr_oi: number | null; change_in_call_oi: number; change_in_put_oi: number; support_strike: number | null; resistance_strike: number | null; max_pain: number | null; bias: string | null };
+export type FoEod = { source: string; file_date: string; trade_date: string | null; underlyings: FoUnderlying[] };
+export type NewsItem = { title: string; source: string | null; link: string; published: string | null };
+export type News = { source: string; fetched_at: string; INDIA: NewsItem[]; GLOBAL: NewsItem[] };
 export type Insights = { learning: { ready: boolean; total_trades: number; rules: string; strategies: Record<string, { trades: number; win_rate_pct: number | null; avg_net_pnl: number | null; net_pnl: number; risk_multiplier: number; note: string }>; cooldowns: Record<string, { until: string; reason: string }> }; timing: Timing[]; stored_symbols: number; disclaimer: string };
 export type Status = { configured: boolean; feed_configured: boolean; provider?: Provider; mode: string; strategy_version: string; schedule_utc: string[]; message: string };
 export type Stats = { closed_trades: number; wins: number; losses: number; win_rate_pct: number | null; net_realized_pnl: number; profit_factor: number | null; avg_win: number | null; avg_loss: number | null; avg_holding_days: number | null; max_drawdown_pct: number };
@@ -81,27 +85,27 @@ export type Report = { id: string; region: Region; trigger: string; source: stri
 export type EquityPoint = { recorded_at: string; equity: number; cash: number };
 
 export type Desk = {
-  settings: Settings; region: Region; demo: boolean; demoReason: string; grounding: unknown; publishedAt: string; loading: boolean; error: string; connected: boolean; needsToken: boolean; updated: string;
+  settings: Settings; region: Region; demo: boolean; foEod: FoEod | null; news: News | null; demoReason: string; grounding: unknown; publishedAt: string; loading: boolean; error: string; connected: boolean; needsToken: boolean; updated: string;
   status: Status | null; portfolio: Portfolio | null; positions: Position[]; reports: Report[]; equity: EquityPoint[]; insights: Insights | null; refresh: () => void;
 };
 
 export function useDesk(settings: Settings, region: Region): Desk {
-  const [state, setState] = useState<Omit<Desk, "settings" | "region" | "demo" | "refresh">>({ demoReason: "", grounding: null, publishedAt: "", loading: false, error: "", connected: false, needsToken: false, updated: "", status: null, portfolio: null, positions: [], reports: [], equity: [], insights: null });
+  const [state, setState] = useState<Omit<Desk, "settings" | "region" | "demo" | "refresh">>({ demoReason: "", grounding: null, foEod: null, news: null, publishedAt: "", loading: false, error: "", connected: false, needsToken: false, updated: "", status: null, portfolio: null, positions: [], reports: [], equity: [], insights: null });
   const refresh = useCallback(() => {
     if (!settings.api) { // default: read the files the GitHub Action publishes
       let off = false;
       setState((st) => ({ ...st, loading: true, error: "" }));
       (async () => {
         try {
-          const [status, portfolio, positions, reports, equity, insights, grounding, meta] = await Promise.all([
+          const [status, portfolio, positions, reports, equity, insights, grounding, meta, foEod, news] = await Promise.all([
             getStatic<Status>("status"), getStatic<Portfolio>("portfolio-" + region), getStatic<{ positions: Position[] }>("positions-" + region),
             getStatic<{ reports: Report[] }>("reports-" + region), getStatic<{ points: EquityPoint[] }>("equity-" + region),
             getStatic<Insights>("insights-" + region).catch(() => null), getStatic<unknown>("grounding-" + region).catch(() => null),
-            getStatic<{ generated_at: string }>("meta").catch(() => null),
+            getStatic<{ generated_at: string }>("meta").catch(() => null), getStatic<FoEod>("fo-eod").catch(() => null), getStatic<News>("news").catch(() => null),
           ]);
-          if (!off) setState({ demoReason: "", grounding, publishedAt: meta?.generated_at || "", loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status, portfolio, positions: positions.positions, reports: reports.reports, equity: equity.points, insights });
+          if (!off) setState({ demoReason: "", grounding, foEod, news, publishedAt: meta?.generated_at || "", loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status, portfolio, positions: positions.positions, reports: reports.reports, equity: equity.points, insights });
         } catch (e) {
-          if (!off) setState({ demoReason: e instanceof Error ? e.message : "No data.", grounding: null, publishedAt: "", loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status: demoStatus, portfolio: demoPortfolio(region), positions: demoPositions(region), reports: demoReports(region), equity: demoEquity(region), insights: demoInsights(region) });
+          if (!off) setState({ demoReason: e instanceof Error ? e.message : "No data.", grounding: null, foEod: null, news: null, publishedAt: "", loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status: demoStatus, portfolio: demoPortfolio(region), positions: demoPositions(region), reports: demoReports(region), equity: demoEquity(region), insights: demoInsights(region) });
         }
       })();
       return () => { off = true; };
@@ -111,7 +115,7 @@ export function useDesk(settings: Settings, region: Region): Desk {
     (async () => {
       try {
         const status = await call<Status>(settings, "/api/v1/paper-bot/status");
-        if (!settings.token) { if (!cancelled) setState({ demoReason: "", grounding: null, publishedAt: "", loading: false, error: "", connected: true, needsToken: true, updated: new Date().toISOString(), status, portfolio: null, positions: [], reports: [], equity: [], insights: null }); return; }
+        if (!settings.token) { if (!cancelled) setState({ demoReason: "", grounding: null, foEod: null, news: null, publishedAt: "", loading: false, error: "", connected: true, needsToken: true, updated: new Date().toISOString(), status, portfolio: null, positions: [], reports: [], equity: [], insights: null }); return; }
         const q = "?region=" + region;
         const [portfolio, positions, reports, equity, insights] = await Promise.all([
           call<Portfolio>(settings, "/api/v1/paper-bot/portfolio" + q),
@@ -120,7 +124,7 @@ export function useDesk(settings: Settings, region: Region): Desk {
           call<{ points: EquityPoint[] }>(settings, "/api/v1/paper-bot/equity" + q + "&limit=300"),
           call<Insights>(settings, "/api/v1/paper-bot/insights" + q).catch(() => null),
         ]);
-        if (!cancelled) setState({ demoReason: "", grounding: null, publishedAt: "", loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status, portfolio, positions: positions.positions, reports: reports.reports, equity: equity.points, insights });
+        if (!cancelled) setState({ demoReason: "", grounding: null, foEod: null, news: null, publishedAt: "", loading: false, error: "", connected: true, needsToken: false, updated: new Date().toISOString(), status, portfolio, positions: positions.positions, reports: reports.reports, equity: equity.points, insights });
       } catch (e) {
         if (!cancelled) setState((s) => ({ ...s, loading: false, connected: false, needsToken: e instanceof ApiError && e.status === 401, error: e instanceof Error ? e.message : "Something went wrong." }));
       }

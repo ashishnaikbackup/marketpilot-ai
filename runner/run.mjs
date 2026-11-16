@@ -1,7 +1,7 @@
 // One tick of the MarketPilot paper bot inside GitHub Actions. No servers, no Cloudflare, no tokens in the browser.
 //   node runner/run.mjs <data-dir>
 // Reads/writes <data-dir>/bot.sqlite and publishes static JSON to <data-dir>/public/paper-bot/*.json.
-import { mkdirSync, writeFileSync, readFileSync, existsSync, statSync, readdirSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, existsSync, statSync, readdirSync, rmSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { join, resolve } from "node:path";
 import { openDb, migrate } from "./sqlite-d1.mjs";
@@ -10,6 +10,9 @@ import { loadGrounding } from "../cloudflare-worker/src/assistant.js";
 import { providerInfo } from "../cloudflare-worker/src/providers.js";
 import { buildUniverse } from "../cloudflare-worker/scripts/build-universe.mjs";
 import { gunzipSync } from "node:zlib";
+import { execSync } from "node:child_process";
+import { fetchFoBhavcopy } from "../cloudflare-worker/src/nse-fo.js";
+import { fetchNews } from "../cloudflare-worker/src/news.js";
 
 const MIGRATIONS = fileURLToPath(new URL("../cloudflare-worker/migrations/", import.meta.url));
 const NSE_MASTER = "https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz";
@@ -54,11 +57,11 @@ export async function runOnce({ dataDir, env: extra = {}, nowMs = Date.now(), fe
     const istMin = (utcMin + 330) % 1440, indiaOpen = wd && istMin >= 555 && istMin <= 930, usOpen = wd && utcMin >= 13 * 60 + 30 && utcMin < 21 * 60; // never label in-session prices as a close
     if ((force ? !indiaOpen : wd && utcMin >= 10 * 60 + 5 && utcMin < 21 * 60) && !(await eodDone(db, "INDIA", nowMs))) await scheduledPaperBot({ scheduledTime: day + (10 * 60 + 20) * 60000 }, env);
     if ((force ? !usOpen : wd && utcMin >= 21 * 60 + 30) && !(await eodDone(db, "GLOBAL", nowMs))) await scheduledPaperBot({ scheduledTime: day + (22 * 60 + 30) * 60000 }, env);
-    return await exportStatic({ env, dir: join(dataDir, "public", "paper-bot"), nowMs });
+    return await exportStatic({ env, dir: join(dataDir, "public", "paper-bot"), nowMs, fetchImpl });
   } finally { close(); }
 }
 
-export async function exportStatic({ env, dir, nowMs = Date.now() }) {
+export async function exportStatic({ env, dir, nowMs = Date.now(), fetchImpl = fetch }) {
   mkdirSync(dir, { recursive: true });
   const get = async (path) => {
     const url = new URL("https://static.invalid" + path);
@@ -80,14 +83,43 @@ export async function exportStatic({ env, dir, nowMs = Date.now() }) {
     const g = await loadGrounding(env, region);
     write("grounding-" + region, { grounding: g });
   }
+  // Extra free sources, refreshed on their own cadence; failures never stop the bot.
+  const stale = (name, mins) => { try { return nowMs - statSync(join(dir, name + ".json")).mtimeMs > mins * 60000; } catch { return true; } };
+  if (stale("fo-eod", 360)) { try { write("fo-eod", await fetchFoBhavcopy(fetchImpl, nowMs)); } catch (e) { log("F&O bhavcopy:", e instanceof Error ? e.message : e); } }
+  if (stale("news", 25)) { try { const n = await fetchNews(fetchImpl); if (n.INDIA.length || n.GLOBAL.length) write("news", n); } catch { /* optional */ } }
   write("meta", { generated_at: new Date(nowMs).toISOString(), hosting: "github-actions", mode: "paper_only" });
   return { files: readdirSync(dir).length, status: status.message };
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// Ten minutes during the Indian or US session, thirty otherwise (cheap no-op ticks keep the chain alive).
+export function tickInterval(nowMs) {
+  const d = new Date(nowMs), m = d.getUTCHours() * 60 + d.getUTCMinutes(), wd = d.getUTCDay() >= 1 && d.getUTCDay() <= 5;
+  return wd && ((m >= 3 * 60 + 40 && m <= 10 * 60 + 40) || (m >= 13 * 60 + 25 && m <= 21 * 60 + 40)) ? 10 * 60000 : 30 * 60000;
+}
+
+function publish(dataDir) {
+  const url = process.env.PUBLISH_URL;
+  if (!url) return;
+  const run = (c) => execSync(c, { cwd: dataDir, stdio: "pipe" });
+  rmSync(join(dataDir, ".git"), { recursive: true, force: true });
+  run("git init -q -b bot-data"); run('git config user.name "marketpilot-bot"'); run('git config user.email "marketpilot-bot@users.noreply.github.com"');
+  run("git add -A"); run(`git commit -qm "Bot data ${new Date().toISOString().slice(0, 16)}Z"`);
+  run(`git push -f "${url}" bot-data`);
+}
+
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
-  const dir = process.argv[2] || "bot-data";
+  const dir = process.argv.find((a, i) => i >= 2 && !a.startsWith("--") && process.argv[i - 1] !== "--loop") || "bot-data";
+  const li = process.argv.indexOf("--loop"), loopMin = li > 0 ? Number(process.argv[li + 1]) : 0;
   const env = {};
   for (const k of ["UPSTOX_ACCESS_TOKEN", "TWELVEDATA_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "GLOBAL_WATCHLIST"]) if (process.env[k]) env[k] = process.env[k];
-  const out = await runOnce({ dataDir: dir, env });
-  log("published", out.files, "files.", out.status);
+  const endAt = Date.now() + loopMin * 60000;
+  for (;;) {
+    try { const out = await runOnce({ dataDir: dir, env }); log("published", out.files, "files.", out.status); publish(dir); }
+    catch (e) { log("tick failed:", e instanceof Error ? e.message : e); if (!loopMin) process.exitCode = 1; }
+    process.env.FORCE_EOD = "0";
+    const wait = tickInterval(Date.now());
+    if (!loopMin || Date.now() + wait > endAt) break;
+    await sleep(wait);
+  }
 }

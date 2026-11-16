@@ -2,10 +2,11 @@ name: Paper bot
 
 # The whole backend lives here: this job fetches market data, runs the paper-trading bot, stores its state and
 # publishes JSON that the website reads. No servers, no Cloudflare, no tokens typed into the website.
+# GitHub cron is best-effort and was observed not to fire, so each run loops for ~5.5 hours (a tick every 10 minutes in
+# market hours, 30 otherwise) and then starts the next run itself. The cron above only restarts the chain if it breaks.
 on:
   schedule:
-    - cron: "*/10 3-10 * * 1-5"   # India session and end-of-day (UTC)
-    - cron: "*/10 13-23 * * 1-5"  # US session and end-of-day (UTC)
+    - cron: "17 */5 * * *"        # safety net: restarts the chain if it ever stops
   workflow_dispatch:
     inputs:
       eod_now:
@@ -15,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: paper-bot
@@ -23,7 +25,7 @@ concurrency:
 jobs:
   tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,21 +42,17 @@ jobs:
           else
             echo "No previous state; starting fresh."
           fi
-      - name: Run one bot tick
+      - name: Run bot ticks (publishes after every tick)
         env:
           UPSTOX_ACCESS_TOKEN: ${{ secrets.UPSTOX_ACCESS_TOKEN }}
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           FORCE_EOD: ${{ inputs.eod_now && '1' || '0' }}
-        run: node runner/run.mjs bot-data
-      - name: Publish data branch (single commit, no history growth)
-        run: |
-          cd bot-data
-          rm -rf .git
-          git init -q -b bot-data
-          git config user.name "marketpilot-bot"
-          git config user.email "marketpilot-bot@users.noreply.github.com"
-          git add -A
-          git commit -qm "Bot data $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" bot-data
+          PUBLISH_URL: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+        run: node runner/run.mjs bot-data --loop 330
+      - name: Start the next run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run bot.yml --repo "${{ github.repository }}" --ref main -f eod_now=false
