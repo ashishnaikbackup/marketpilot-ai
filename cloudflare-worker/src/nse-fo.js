@@ -74,7 +74,7 @@ export async function fetchFoBhavcopy(fetchImpl = fetch, nowMs = Date.now()) {
       if (!res.ok) { tried.push(ymd + ":HTTP" + res.status); continue; }
       const sum = summariseBhavcopy(unzipFirst(Buffer.from(await res.arrayBuffer())).toString("utf8"));
       if (sum.underlyings.length) return { source: "NSE F&O bhavcopy (official end-of-day file)", data_mode: "eod", file_date: ymd, ...sum };
-    } catch (e) { tried.push(ymd + ":" + (e instanceof Error ? e.message : "error").slice(0, 60)); }
+    } catch (e) { tried.push(ymd + ":" + (e instanceof Error ? e.message : "error").slice(0, 60)); if (e?.name === "TimeoutError" || e?.name === "AbortError") break; /* blocked or unreachable: stop early */ }
   }
   throw new Error("NSE bhavcopy not available for the last few trading days. Tried " + tried.join(", "));
 }

@@ -51,7 +51,7 @@ Test totals: Worker 57 tests (incl. SQLite integration), backend 34, frontend ty
 - **Architecture:** GitHub only. The `Paper bot` workflow runs the bot, keeps state on the `bot-data` branch and publishes JSON that the website reads directly. No Cloudflare, no API address, no tokens in the browser.
 - **Built and tested (~85%)**: engine, learning, best-time analysis, persistence, reports, assistant (runs in the browser), security, UI, Yahoo delayed feed, Upstox live adapter with F&O chains, universe builder, runner. 80 worker tests.
 - **Verified against real data feeds: 0%.** The build sandbox cannot reach Yahoo or Upstox, so both are tested with fixtures only. The first workflow run is the real test; expect to fix small things (for example Yahoo rate-limiting GitHub runner IPs).
-- **Also added:** official NSE end-of-day F&O open-interest file (PCR, OI change, support/resistance, max pain), news headlines, and a self-chaining bot workflow (cron proved unreliable).
+- **Also added:** news headlines (working), an NSE end-of-day F&O open-interest reader (code tested, but NSE times out requests from GitHub servers, so it publishes nothing for now), and a self-chaining bot workflow (cron proved unreliable).
 - **Honest limits:** free data is delayed, not live; F&O chains and real-time India need an Upstox token; international is delayed at best; no news or fundamentals; learning and timing need weeks of history.
 
 ## Strategy caveat
