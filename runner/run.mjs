@@ -84,7 +84,9 @@ async function updateBoards({ env, dir, nowMs, fetchImpl, write, sources }) {
     let state = {}; try { state = JSON.parse(readFileSync(file, "utf8")); } catch { /* first run */ }
     let r = { attempted: 0 };
     const empty = Object.keys(state).length === 0;
-    if (p.live || empty) r = await refreshBoard({ state, symbols: p.symbols, budget: empty ? budget : budget, suffix: p.suffix, fetchImpl, nowMs });
+    const priced = p.symbols.filter((x) => state[x.symbol]?.p > 0).length, filling = priced < 0.9 * p.symbols.length;
+    // In session: keep prices fresh. Out of session: only fill symbols that have no price yet (last close, with its own timestamp).
+    if (p.live || filling) r = await refreshBoard({ state, symbols: p.symbols.filter((x) => p.live || !(state[x.symbol]?.p > 0)), budget: filling && !p.live ? budget * 2 : budget, suffix: p.suffix, fetchImpl, nowMs });
     writeFileSync(file, JSON.stringify(state));
     const rows = boardRows(state, p.symbols);
     write("board-" + p.region, { generated_at: new Date(nowMs).toISOString(), source: "Yahoo Finance chart feed (unofficial)" + (p.region === "INDIA" ? "; NSE symbols from the Upstox public instrument master" : "; symbols from the Nasdaq Trader directory"), total_symbols: p.symbols.length, priced: rows.length, last_slice: r, rows });
