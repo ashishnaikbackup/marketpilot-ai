@@ -25,7 +25,7 @@ test("parseYahooChart extracts price, timestamps, daily closes and local-time 30
   const d = parseYahooChart(chart({ n: 60 }));
   assert.equal(d.price, 140); assert.equal(d.closes.length, 60); assert.match(d.timestamp, /Z$/);
   const i = parseYahooChart(chart({ n: 20, intraday: true }), { intraday: true });
-  assert.equal(i.bars.length, 20); assert.match(i.bars[0].slot_ts, /T\d{2}:\d{2}:00\+05:30$/);
+  assert.equal(i.bars.length, 19, "newest (possibly forming) bar is dropped"); assert.match(i.bars[0].slot_ts, /T\d{2}:\d{2}:00\+05:30$/);
   assert.equal(parseYahooChart({ chart: { error: { code: "Not Found" }, result: null } }), null);
   assert.equal(parseYahooChart(chart({ price: 0 })), null);
 });

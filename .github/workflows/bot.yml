@@ -7,6 +7,11 @@ on:
     - cron: "*/10 3-10 * * 1-5"   # India session and end-of-day (UTC)
     - cron: "*/10 13-23 * * 1-5"  # US session and end-of-day (UTC)
   workflow_dispatch:
+    inputs:
+      eod_now:
+        description: "Also run the end-of-day pass for both markets now (fills the International view with the last close)"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -41,6 +46,7 @@ jobs:
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FORCE_EOD: ${{ inputs.eod_now && '1' || '0' }}
         run: node runner/run.mjs bot-data
       - name: Publish data branch (single commit, no history growth)
         run: |

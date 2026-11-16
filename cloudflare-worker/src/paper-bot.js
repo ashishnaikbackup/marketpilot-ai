@@ -116,7 +116,7 @@ export async function paperBotRoute(request,env,url){
   const region=regionParam(url)||"INDIA";
   const closed=((await env.DB.prepare("SELECT strategy,symbol,closed_at,realized_pnl FROM bot_positions WHERE region=? AND status='CLOSED'").bind(region).all()).results)||[];
   const learning=learn(closed.map(x=>({strategy:x.strategy||"legacy",symbol:x.symbol,closed_at:x.closed_at,net_pnl:Number(x.realized_pnl||0)})));
-  const syms=((await env.DB.prepare("SELECT symbol,COUNT(*) n FROM bot_intraday WHERE region=? GROUP BY symbol ORDER BY n DESC LIMIT 6").bind(region).all()).results)||[];
+  const syms=((await env.DB.prepare("SELECT symbol,COUNT(*) n FROM bot_intraday WHERE region=? GROUP BY symbol ORDER BY (symbol IN ('NIFTY','BANKNIFTY','FINNIFTY','SPY','QQQ')) DESC, n DESC LIMIT 6").bind(region).all()).results)||[];
   const timing=[];
   for(const s of syms){
    const bars=((await env.DB.prepare("SELECT slot_ts,open,close FROM bot_intraday WHERE region=? AND symbol=? ORDER BY slot_ts").bind(region,s.symbol).all()).results)||[];

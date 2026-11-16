@@ -29,6 +29,7 @@ export function parseYahooChart(payload, { intraday = false } = {}) {
     if (intraday) { if (finite(o) && o > 0) out.bars.push({ slot_ts: l.slice(0, 19) + tz, open: o, close: c }); }
     else out.closes.push({ day: l.slice(0, 10), close: c });
   }
+  if (intraday) out.bars.pop(); // the newest bar may still be forming; only completed bars are stored
   return out.price && out.timestamp ? out : null;
 }
 

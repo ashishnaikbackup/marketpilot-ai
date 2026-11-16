@@ -50,8 +50,10 @@ export async function runOnce({ dataDir, env: extra = {}, nowMs = Date.now(), fe
     await scheduledPaperBot({ scheduledTime: Math.floor(nowMs / 900000) * 900000 }, env);
     // End-of-day passes, once per day each, after the close.
     const day = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-    if (wd && utcMin >= 10 * 60 + 5 && utcMin < 21 * 60 && !(await eodDone(db, "INDIA", nowMs))) await scheduledPaperBot({ scheduledTime: day + (10 * 60 + 20) * 60000 }, env);
-    if (wd && utcMin >= 21 * 60 + 30 && !(await eodDone(db, "GLOBAL", nowMs))) await scheduledPaperBot({ scheduledTime: day + (22 * 60 + 30) * 60000 }, env);
+    const force = extra.FORCE_EOD === "1" || process.env.FORCE_EOD === "1";
+    const istMin = (utcMin + 330) % 1440, indiaOpen = wd && istMin >= 555 && istMin <= 930, usOpen = wd && utcMin >= 13 * 60 + 30 && utcMin < 21 * 60; // never label in-session prices as a close
+    if ((force ? !indiaOpen : wd && utcMin >= 10 * 60 + 5 && utcMin < 21 * 60) && !(await eodDone(db, "INDIA", nowMs))) await scheduledPaperBot({ scheduledTime: day + (10 * 60 + 20) * 60000 }, env);
+    if ((force ? !usOpen : wd && utcMin >= 21 * 60 + 30) && !(await eodDone(db, "GLOBAL", nowMs))) await scheduledPaperBot({ scheduledTime: day + (22 * 60 + 30) * 60000 }, env);
     return await exportStatic({ env, dir: join(dataDir, "public", "paper-bot"), nowMs });
   } finally { close(); }
 }
